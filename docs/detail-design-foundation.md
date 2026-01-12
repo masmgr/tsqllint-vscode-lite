@@ -1,4 +1,4 @@
-# 詳細設計：土台整備（tsqllint-vscode-lite）
+﻿# 詳細設計：土台整備（tsqllint-vscode-lite）
 
 本書は `docs/requirement.md` および `docs/external-spec.md` の実装に先立ち、VS Code 拡張機能開発の「土台（テンプレ、型、lint、テスト、CI）」を整備するための詳細設計を定義する。
 
@@ -9,7 +9,7 @@
 ### 1.1 目的
 
 - `yo code` による TypeScript 拡張テンプレを作成し、以降の実装を載せるための開発基盤を確立する。
-- `strict` な TypeScript、ESLint、VS Code Extension Test CLI（`@vscode/test-cli` / `@vscode/test-electron`）と Mocha、および CI を先に通し、「常に壊れていない状態」を初期段階から担保する。
+- `strict` な TypeScript、Biome（lint/format）、VS Code Extension Test CLI（`@vscode/test-cli` / `@vscode/test-electron`）と Mocha、および CI を先に通し、「常に壊れていない状態」を初期段階から担保する。
 
 ### 1.2 土台フェーズの完了条件（Definition of Done）
 
@@ -28,7 +28,7 @@
 
 - `yo code` で作る VS Code 拡張（TypeScript）テンプレ土台
 - TypeScript 設定（`strict` + 追加の安全系オプション）
-- ESLint（TypeScript type-aware lint を含む）設定
+- Biome（lint/format）設定
 - VS Code Extension Test CLI（`@vscode/test-cli` / `@vscode/test-electron`）+ Mocha（拡張テスト）導入
 - GitHub Actions（CI）導入
 - 推奨ディレクトリ構成、npm scripts、品質ゲートの定義
@@ -68,13 +68,11 @@
 │  └─ test/
 │     └─ extension.test.ts
 ├─ out/              (ビルド成果物)
-├─ .eslintrc.cjs
-├─ .eslintignore     (必要に応じて)
+├─ biome.json
 ├─ .gitignore
 ├─ package.json
 ├─ package-lock.json
 ├─ tsconfig.json
-├─ tsconfig.eslint.json
 └─ README.md
 ```
 
@@ -105,7 +103,7 @@
 
 - `tsconfig.json` は `strict: true` を必須とする。
 - `noUncheckedIndexedAccess` / `exactOptionalPropertyTypes` 等の「落とし穴を早期に検出する」設定を有効化する。
-- `src/` のビルドと、ESLint の type-aware lint で参照する `tsconfig.eslint.json` を分ける。
+- `src/` のビルドは `tsconfig.json` で行い、lint/format は Biome に統一する。
 
 ### 6.2 `tsconfig.json`（案）
 
@@ -119,36 +117,24 @@
   - `noImplicitOverride: true`
   - `noPropertyAccessFromIndexSignature: true`
 
-### 6.3 `tsconfig.eslint.json`（案）
-
-- 目的：ESLint の type-aware lint 用（`test/` も含む）
-- `include`: `["src/**/*.ts", "test/**/*.ts"]`
-- `noEmit: true`
-
 ---
 
-## 7. ESLint 設計
+## 7. Biome 設計
 
 ### 7.1 基本方針
 
-- TypeScript ESLint を採用し、型情報を利用するルールも有効化する（type-aware）。
-- 重大なバグに直結しやすいルールを優先する（未処理 Promise、危険な any 等）。
+- Biome を lint と format の単一ツールとして採用する。
+- まずは recommended ルールを有効にし、必要に応じて追加する。
+- 型情報を使う lint は採用せず、設計の複雑性を抑える。
 
-### 7.2 依存パッケージ（案）
+### 7.2 設定方針（案）
 
-- `eslint`
-- `typescript-eslint`（`@typescript-eslint/parser` + `@typescript-eslint/eslint-plugin` 相当）
+- `biome.json` に ignore と formatter を定義する。
+- `linter.rules.recommended: true` を基本とする。
 
-必要に応じて追加：
-- `eslint-plugin-import`（import の健全性）
-- `eslint-config-prettier`（Prettier を入れる場合のみ、競合回避）
+### 7.3 依存パッケージ（案）
 
-### 7.3 ルール方針（案）
-
-- `@typescript-eslint/no-floating-promises`: 有効（未await Promise の取りこぼし防止）
-- `@typescript-eslint/consistent-type-imports`: 有効（型 import を安定化）
-- `@typescript-eslint/no-misused-promises`: 有効（イベントハンドラ等の誤用防止）
-- `@typescript-eslint/switch-exhaustiveness-check`: 有効（将来の拡張に備える）
+- `@biomejs/biome`
 
 ---
 
@@ -178,7 +164,8 @@
 - `typecheck`：`tsc -p tsconfig.json --noEmit`（もしくは `tsc -p tsconfig.json` を `build` に寄せる）
 - `build`：`tsc -p tsconfig.json`
 - `vscode:prepublish`：`npm run build`（VS Code 拡張の標準フックとして用意）
-- `lint`：`eslint .`
+- `lint`：`biome lint .`
+- `format`：`biome format --write .`
 - `test`：`vscode-test`
 - `watch`：`tsc -watch -p tsconfig.json`
 （任意）
@@ -229,8 +216,7 @@
 - 生成物（テンプレ）
   - `package.json`, `src/extension.ts`, `.vscode/launch.json`, `.vscode/tasks.json`（テンプレ由来）
 - 追加/更新（品質ゲート）
-  - `tsconfig.json`, `tsconfig.eslint.json`
-  - `.eslintrc.cjs`（必要なら `.eslintignore`）
+  - `tsconfig.json`, `biome.json`
   - `src/test/*.test.ts`
   - `.github/workflows/ci.yml`
 
@@ -243,3 +229,5 @@
 - `lint/parseOutput.ts`：stdout パース（純粋関数）→ Mocha で仕様テストに移行しやすい
 - `lint/runTsqllint.ts`：外部実行（副作用）→ モック/フェイクCLI で統合テストを用意しやすい
 - `extension.ts`：イベント/Diagnostics 更新（VS Code API 依存）→ E2E を後段で追加
+
+
