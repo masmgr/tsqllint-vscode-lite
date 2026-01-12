@@ -9,13 +9,13 @@
 ### 1.1 目的
 
 - `yo code` による TypeScript 拡張テンプレを作成し、以降の実装を載せるための開発基盤を確立する。
-- `strict` な TypeScript、ESLint、Vitest、および CI を先に通し、「常に壊れていない状態」を初期段階から担保する。
+- `strict` な TypeScript、ESLint、VS Code Extension Test CLI（`@vscode/test-cli` / `@vscode/test-electron`）と Mocha、および CI を先に通し、「常に壊れていない状態」を初期段階から担保する。
 
 ### 1.2 土台フェーズの完了条件（Definition of Done）
 
 - `npm run typecheck` が成功する。
 - `npm run lint` が成功する（警告/エラーはゼロ）。
-- `npm test`（Vitest）が成功する。
+- `npm test`（VS Code Extension Test CLI + Mocha）が成功する。
 - `npm run build` が成功し、`out/` にビルド成果物が生成される。
 - GitHub Actions の CI が PR / push で同じコマンドを実行し、成功する。
 - 拡張機能を F5 で起動でき、アクティベーションでエラーが出ない（機能は未実装でも良い）。
@@ -29,7 +29,7 @@
 - `yo code` で作る VS Code 拡張（TypeScript）テンプレ土台
 - TypeScript 設定（`strict` + 追加の安全系オプション）
 - ESLint（TypeScript type-aware lint を含む）設定
-- Vitest（ユニットテスト）導入
+- VS Code Extension Test CLI（`@vscode/test-cli` / `@vscode/test-electron`）+ Mocha（拡張テスト）導入
 - GitHub Actions（CI）導入
 - 推奨ディレクトリ構成、npm scripts、品質ゲートの定義
 
@@ -43,7 +43,7 @@
 
 ## 3. 前提
 
-- Node.js は LTS を使用する（CI も LTS に合わせる）。
+- Node.js 22 を使用する（CI も 22 に合わせる）。
 - パッケージマネージャは npm を標準とする（`package-lock.json` による再現性確保）。
 - クロスプラットフォーム（Windows/macOS/Linux）を前提に、パス/改行差異の影響を受けにくい構成とする。
 
@@ -65,10 +65,8 @@
 │  └─ detail-design-foundation.md
 ├─ src/
 │  ├─ extension.ts
-│  └─ (今後: lint/, config/, ui/ 等を追加)
-├─ test/
-│  └─ unit/
-│     └─ sample.test.ts
+│  └─ test/
+│     └─ extension.test.ts
 ├─ out/              (ビルド成果物)
 ├─ .eslintrc.cjs
 ├─ .eslintignore     (必要に応じて)
@@ -77,12 +75,11 @@
 ├─ package-lock.json
 ├─ tsconfig.json
 ├─ tsconfig.eslint.json
-├─ vitest.config.ts
 └─ README.md
 ```
 
 - `src/` は拡張本体（VS Code API に依存する層）。
-- `test/unit/` は純粋関数・ロジック中心（VS Code API 依存を避ける）で Vitest を適用する。
+- `src/test/` は拡張テスト（Mocha）を配置する。
 - `out/` は `tsc` の出力先（コミット対象外）。
 
 ---
@@ -98,7 +95,7 @@
 ### 5.2 初期依存の整理
 
 - `vscode` 型定義（テンプレ標準）を維持する。
-- テストフレームワークは Vitest に統一する（テンプレが Mocha を含む場合は移行する）。
+- テストフレームワークは Mocha を使用し、VS Code Extension Test CLI に合わせる。
 
 ---
 
@@ -125,7 +122,7 @@
 ### 6.3 `tsconfig.eslint.json`（案）
 
 - 目的：ESLint の type-aware lint 用（`test/` も含む）
-- `include`: `["src/**/*.ts", "test/**/*.ts", "vitest.config.ts"]`
+- `include`: `["src/**/*.ts", "test/**/*.ts"]`
 - `noEmit: true`
 
 ---
@@ -155,22 +152,22 @@
 
 ---
 
-## 8. Vitest 設計（ユニットテスト）
+## 8. Extension Test CLI + Mocha 設計（拡張テスト）
 
 ### 8.1 基本方針
 
-- 土台フェーズでは「純粋関数」のテストを先に整備できる状態を作る。
-- `vscode` API に依存するテスト（Extension host 起動）は次工程に回す。
+- 土台フェーズでは拡張ホスト上で動作するテストを実行できる状態を作る。
+- `vscode` API に依存しないテストは必要に応じて後段で分離する。
 
 ### 8.2 設定方針（案）
 
-- `vitest.config.ts` を追加し、`test/unit/**/*.test.ts` を対象とする。
-- Node 環境（`environment: "node"`）で実行する。
+- `@vscode/test-cli` / `@vscode/test-electron` を使用し、Mocha で `src/test/**/*.test.ts` を対象にする。
+- Extension Development Host 上で実行する。
 - カバレッジは必須ゲートにしない（次工程で段階導入）。
 
 ### 8.3 サンプルテスト
 
-- CI の健全性確認用に、`test/unit/sample.test.ts` を 1 本用意し、`npm test` の疎通を担保する。
+- CI の健全性確認用に、`src/test/extension.test.ts` を 1 本用意し、`npm test` の疎通を担保する。
 
 ---
 
@@ -182,10 +179,8 @@
 - `build`：`tsc -p tsconfig.json`
 - `vscode:prepublish`：`npm run build`（VS Code 拡張の標準フックとして用意）
 - `lint`：`eslint .`
-- `test`：`vitest run`
+- `test`：`vscode-test`
 - `watch`：`tsc -watch -p tsconfig.json`
-- `test:watch`：`vitest`
-
 （任意）
 - `package`：拡張のパッケージング（後工程で `@vscode/vsce` 採用時）
 
@@ -206,7 +201,7 @@
   - `ci` 1 ジョブで直列に実行（土台フェーズでは単純さを優先）
 - 実行内容
   - `actions/checkout`
-  - `actions/setup-node`（LTS、npm cache 有効）
+  - `actions/setup-node`（Node 22、npm cache 有効）
   - `npm ci`
   - `npm run typecheck`
   - `npm run lint`
@@ -216,7 +211,7 @@
 ### 10.3 推奨マトリクス
 
 - `os: [ubuntu-latest, windows-latest, macos-latest]`
-- Node は `lts/*`（固定したい場合は `.nvmrc` / `engines` を追加し、CI も一致させる）
+- Node は 22（固定したい場合は `.nvmrc` / `engines` を追加し、CI も一致させる）
 
 ---
 
@@ -236,7 +231,7 @@
 - 追加/更新（品質ゲート）
   - `tsconfig.json`, `tsconfig.eslint.json`
   - `.eslintrc.cjs`（必要なら `.eslintignore`）
-  - `vitest.config.ts`, `test/unit/*.test.ts`
+  - `src/test/*.test.ts`
   - `.github/workflows/ci.yml`
 
 ---
@@ -245,6 +240,6 @@
 
 土台が整ったら、次工程（仕様テスト→最小実装）では以下の分割方針を推奨する。
 
-- `lint/parseOutput.ts`：stdout パース（純粋関数）→ Vitest で仕様テストに移行しやすい
+- `lint/parseOutput.ts`：stdout パース（純粋関数）→ Mocha で仕様テストに移行しやすい
 - `lint/runTsqllint.ts`：外部実行（副作用）→ モック/フェイクCLI で統合テストを用意しやすい
 - `extension.ts`：イベント/Diagnostics 更新（VS Code API 依存）→ E2E を後段で追加
