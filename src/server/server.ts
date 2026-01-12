@@ -12,6 +12,7 @@ import { URI } from "vscode-uri";
 import { defaultSettings, type TsqllintSettings } from "./config/settings";
 import { parseOutput } from "./lint/parseOutput";
 import { runTsqllint } from "./lint/runTsqllint";
+import type { LintRunResult } from "./lint/types";
 
 type LintReason = "save" | "type" | "manual";
 type PendingLint = { reason: LintReason; version: number | null; fix: boolean };
@@ -89,12 +90,7 @@ documents.onDidClose((change) => {
 connection.onRequest(
 	"tsqllint/lintDocument",
 	async (params: { uri: string }) => {
-		const issues = await requestLint(
-			params.uri,
-			"manual",
-			false,
-			null,
-		);
+		const issues = await requestLint(params.uri, "manual", false, null);
 		return { ok: issues >= 0, issues: Math.max(0, issues) };
 	},
 );
@@ -354,7 +350,7 @@ async function runLintNow(
 		cwd,
 		lines: document.getText().split(/\r?\n/),
 		rangeMode: settings.rangeMode,
-		targetPaths: tempInfo ? [tempInfo.filePath] : undefined,
+		...(tempInfo ? { targetPaths: [tempInfo.filePath] } : {}),
 	});
 
 	connection.sendDiagnostics({ uri, diagnostics });
@@ -376,7 +372,9 @@ function resolveCwd(filePath: string | undefined): string {
 		}
 	}
 
-	return workspaceFolders[0] ?? (filePath ? path.dirname(filePath) : process.cwd());
+	return (
+		workspaceFolders[0] ?? (filePath ? path.dirname(filePath) : process.cwd())
+	);
 }
 
 function isSaved(document: TextDocument): boolean {
@@ -424,9 +422,7 @@ async function notifyStderr(stderr: string): Promise<void> {
 	if (!trimmed) {
 		return;
 	}
-	await connection.window.showWarningMessage(
-		`tsqllint: ${firstLine(trimmed)}`,
-	);
+	await connection.window.showWarningMessage(`tsqllint: ${firstLine(trimmed)}`);
 	connection.console.warn(trimmed);
 }
 
