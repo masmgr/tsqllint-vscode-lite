@@ -7,15 +7,51 @@
 		"vscode": "^1.108.1"
 	},
 	"categories": ["Other"],
-	"activationEvents": [],
+	"activationEvents": ["onLanguage:sql", "onCommand:tsqllint-lite.run"],
 	"main": "./out/extension.js",
 	"contributes": {
 		"commands": [
 			{
-				"command": "tsqllint-lite.helloWorld",
-				"title": "Hello World"
+				"command": "tsqllint-lite.run",
+				"title": "TSQLLint: Run",
+				"category": "TSQLLint"
 			}
-		]
+		],
+		"configuration": {
+			"title": "tsqllint-lite",
+			"properties": {
+				"tsqllint.path": {
+					"type": "string",
+					"default": "",
+					"description": "Path to tsqllint executable."
+				},
+				"tsqllint.configPath": {
+					"type": "string",
+					"default": "",
+					"description": "Path to tsqllint config file (passed with -c)."
+				},
+				"tsqllint.runOnSave": {
+					"type": "boolean",
+					"default": true,
+					"description": "Run lint when a SQL document is saved."
+				},
+				"tsqllint.runOnType": {
+					"type": "boolean",
+					"default": false,
+					"description": "Run lint while typing (debounced)."
+				},
+				"tsqllint.debounceMs": {
+					"type": "number",
+					"default": 500,
+					"description": "Debounce time in milliseconds for run-on-type."
+				},
+				"tsqllint.timeoutMs": {
+					"type": "number",
+					"default": 10000,
+					"description": "Timeout in milliseconds for lint execution."
+				}
+			}
+		}
 	},
 	"scripts": {
 		"typecheck": "tsc -p tsconfig.json --noEmit",
@@ -34,5 +70,11 @@
 		"typescript": "^5.9.3",
 		"@vscode/test-cli": "^0.0.12",
 		"@vscode/test-electron": "^2.5.2"
+	},
+	"dependencies": {
+		"vscode-languageclient": "^9.0.1",
+		"vscode-languageserver": "^9.0.1",
+		"vscode-languageserver-textdocument": "^1.0.11",
+		"vscode-uri": "^3.0.8"
 	}
 }

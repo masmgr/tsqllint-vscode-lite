@@ -1,0 +1,15 @@
+export type TsqllintSettings = {
+	path?: string;
+	configPath?: string;
+	runOnSave: boolean;
+	runOnType: boolean;
+	debounceMs: number;
+	timeoutMs: number;
+};
+
+export const defaultSettings: TsqllintSettings = {
+	runOnSave: true,
+	runOnType: false,
+	debounceMs: 500,
+	timeoutMs: 10000,
+};
