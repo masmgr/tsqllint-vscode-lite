@@ -64,5 +64,5 @@
 ## 10. Tests
 - [x] Unit tests for `parseOutput`.
 - [x] Expand unit coverage (severity variants, path forms, col edge cases).
-- [ ] Integration test with fake CLI for `runTsqllint`.
-- [ ] Extension test to verify Problems panel updates.
+- [x] Integration test with fake CLI for `runTsqllint`.
+- [x] Extension test to verify Problems panel updates.
