@@ -81,9 +81,9 @@
 - [ ] Verify packaging metadata in `package.json` (e.g. `repository`, `publisher`, `keywords`, `icon`) if publishing.
 
 ## 12. Architecture review (hardening)
-- [ ] Client readiness: use `client.onReady()` (not `client.start()` Promise) before sending requests/notifications.
-- [ ] Per-document debounce: base `debounceMs` on `getSettingsForDocument(uri)` (scopeUri override), not global `settings`.
-- [ ] Server factoring: split `server.ts` into scheduler/queue vs side-effects (temp files, runner, diagnostics, notifications) for testability.
-- [ ] Concurrency: replace `sleep` polling in `runLintWhenPossible` with a semaphore/awaitable queue.
-- [ ] Command availability cache: avoid permanent negative cache (add TTL or retry on next run / config change).
-- [ ] Parser robustness: decide tolerated stdout variants (missing trailing '.', extra severity, parentheses in file path) and adjust `parseOutput`/tests accordingly.
+- [x] Client readiness: use `client.onReady()` (not `client.start()` Promise) before sending requests/notifications.
+- [x] Per-document debounce: base `debounceMs` on `getSettingsForDocument(uri)` (scopeUri override), not global `settings`.
+- [x] Server factoring: split `server.ts` into scheduler/queue vs side-effects (temp files, runner, diagnostics, notifications) for testability.
+- [x] Concurrency: replace `sleep` polling in `runLintWhenPossible` with a semaphore/awaitable queue.
+- [x] Command availability cache: avoid permanent negative cache (add TTL or retry on next run / config change).
+- [x] Parser robustness: decide tolerated stdout variants (missing trailing '.', extra severity, parentheses in file path) and adjust `parseOutput`/tests accordingly.
