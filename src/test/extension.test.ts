@@ -8,15 +8,7 @@ suite("Extension Test Suite", () => {
 	test("updates diagnostics after lint run", async function () {
 		this.timeout(20000);
 
-		const extension = vscode.extensions.all.find(
-			(ext) => ext.packageJSON?.name === "tsqllint-lite",
-		);
-		assert.ok(extension, "Extension tsqllint-lite not found");
-		const api = (await extension.activate()) as { clientReady?: Promise<void> };
-		const clientReady = api.clientReady;
-		if (clientReady) {
-			await clientReady;
-		}
+		await activateExtension();
 
 		const fakeCli = await createFakeCli(`
 const args = process.argv.slice(2);
@@ -32,29 +24,14 @@ process.stdout.write(\`\${filePath}(1,1): error FakeRule : Fake issue.\`);
 		const documentUri = vscode.Uri.file(path.join(tempDir, "query.sql"));
 		await fs.writeFile(documentUri.fsPath, "select 1;", "utf8");
 
-		const config = vscode.workspace.getConfiguration("tsqllint");
-		const previousPath = config.inspect<string>("path")?.workspaceValue;
-		const previousRunOnSave =
-			config.inspect<boolean>("runOnSave")?.workspaceValue;
-		const previousFixOnSave =
-			config.inspect<boolean>("fixOnSave")?.workspaceValue;
-
+		let snapshot: Map<string, unknown | undefined> | null = null;
 		try {
-			await config.update(
-				"path",
-				fakeCli.commandPath,
-				vscode.ConfigurationTarget.Workspace,
-			);
-			await config.update(
-				"runOnSave",
-				true,
-				vscode.ConfigurationTarget.Workspace,
-			);
-			await config.update(
-				"fixOnSave",
-				false,
-				vscode.ConfigurationTarget.Workspace,
-			);
+			const config = vscode.workspace.getConfiguration("tsqllint");
+			snapshot = await applyConfig(config, {
+				path: fakeCli.commandPath,
+				runOnSave: true,
+				fixOnSave: false,
+			});
 
 			let document = await vscode.workspace.openTextDocument(documentUri);
 			document = await vscode.languages.setTextDocumentLanguage(
@@ -69,48 +46,337 @@ process.stdout.write(\`\${filePath}(1,1): error FakeRule : Fake issue.\`);
 			});
 			await document.save();
 
-			const diagnostics = await waitForDiagnostics(document.uri, 1, 10000);
+			const diagnostics = await waitForDiagnostics(
+				document.uri,
+				(entries) => entries.length >= 1,
+				10000,
+			);
 			const match = diagnostics.find(
 				(diag) => diag.source === "tsqllint" && diag.code === "FakeRule",
 			);
 			assert.ok(match);
 			assert.strictEqual(match.message, "Fake issue");
 		} finally {
-			await config.update(
-				"path",
-				previousPath ?? null,
-				vscode.ConfigurationTarget.Workspace,
-			);
-			await config.update(
-				"runOnSave",
-				previousRunOnSave ?? null,
-				vscode.ConfigurationTarget.Workspace,
-			);
-			await config.update(
-				"fixOnSave",
-				previousFixOnSave ?? null,
-				vscode.ConfigurationTarget.Workspace,
-			);
+			const config = vscode.workspace.getConfiguration("tsqllint");
+			if (snapshot) {
+				await restoreConfig(config, snapshot);
+			}
 			await vscode.commands.executeCommand("workbench.action.closeAllEditors");
 			await fakeCli.cleanup();
 			await sleep(100);
-			await fs.rm(tempDir, {
-				recursive: true,
-				force: true,
-				maxRetries: 30,
-				retryDelay: 100,
+			await removeDir(tempDir);
+		}
+	});
+
+	test("tsqllint-lite.run updates diagnostics when runOnSave=false", async function () {
+		this.timeout(20000);
+		await activateExtension();
+
+		const fakeCli = await createFakeCli(`
+const args = process.argv.slice(2);
+const filePath = args[args.length - 1] || "";
+process.stdout.write(\`\${filePath}(1,1): error ManualRule : Manual issue.\`);
+`);
+
+		const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri;
+		assert.ok(workspaceRoot, "No workspace folder available for tests");
+		const tempDir = await fs.mkdtemp(
+			path.join(workspaceRoot.fsPath, "tsqllint-workspace-"),
+		);
+		const documentUri = vscode.Uri.file(path.join(tempDir, "query.sql"));
+		await fs.writeFile(documentUri.fsPath, "select 1;", "utf8");
+
+		let snapshot: Map<string, unknown | undefined> | null = null;
+		try {
+			const config = vscode.workspace.getConfiguration("tsqllint");
+			snapshot = await applyConfig(config, {
+				path: fakeCli.commandPath,
+				runOnSave: false,
+				runOnType: false,
+				fixOnSave: false,
 			});
+
+			let document = await vscode.workspace.openTextDocument(documentUri);
+			document = await vscode.languages.setTextDocumentLanguage(
+				document,
+				"sql",
+			);
+			await vscode.window.showTextDocument(document, { preview: false });
+
+			await vscode.commands.executeCommand("tsqllint-lite.run");
+
+			const diagnostics = await waitForDiagnostics(
+				document.uri,
+				(entries) => entries.length >= 1,
+				10000,
+			);
+			const match = diagnostics.find(
+				(diag) => diag.source === "tsqllint" && diag.code === "ManualRule",
+			);
+			assert.ok(match);
+		} finally {
+			const config = vscode.workspace.getConfiguration("tsqllint");
+			if (snapshot) {
+				await restoreConfig(config, snapshot);
+			}
+			await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+			await fakeCli.cleanup();
+			await sleep(100);
+			await removeDir(tempDir);
+		}
+	});
+
+	test("run-on-type lints unsaved edits", async function () {
+		this.timeout(20000);
+		await activateExtension();
+
+		const fakeCli = await createFakeCli(`
+const args = process.argv.slice(2);
+const filePath = args[args.length - 1] || "";
+process.stdout.write(\`\${filePath}(1,1): warning TypeRule : Typed issue.\`);
+`);
+
+		let snapshot: Map<string, unknown | undefined> | null = null;
+		try {
+			const config = vscode.workspace.getConfiguration("tsqllint");
+			snapshot = await applyConfig(config, {
+				path: fakeCli.commandPath,
+				runOnType: true,
+				debounceMs: 50,
+				runOnSave: false,
+				fixOnSave: false,
+			});
+
+			const document = await vscode.workspace.openTextDocument({
+				language: "sql",
+				content: "",
+			});
+			const editor = await vscode.window.showTextDocument(document, {
+				preview: false,
+			});
+
+			await editor.edit((builder) => {
+				builder.insert(new vscode.Position(0, 0), "select 1;");
+			});
+
+			const diagnostics = await waitForDiagnostics(
+				document.uri,
+				(entries) => entries.length >= 1,
+				10000,
+			);
+			const match = diagnostics.find(
+				(diag) => diag.source === "tsqllint" && diag.code === "TypeRule",
+			);
+			assert.ok(match);
+		} finally {
+			const config = vscode.workspace.getConfiguration("tsqllint");
+			if (snapshot) {
+				await restoreConfig(config, snapshot);
+			}
+			await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+			await fakeCli.cleanup();
+		}
+	});
+
+	test("fix command runs --fix and refreshes diagnostics", async function () {
+		this.timeout(20000);
+		await activateExtension();
+
+		const fakeCli = await createFakeCli(`
+const fs = require("node:fs");
+const path = require("node:path");
+const args = process.argv.slice(2);
+const marker = path.join(__dirname, "fix-called.txt");
+if (args.includes("--fix")) {
+	fs.writeFileSync(marker, "fixed");
+	process.stdout.write("1 Fixed");
+	return;
+}
+const filePath = args[args.length - 1] || "";
+process.stdout.write(\`\${filePath}(1,1): error FixRule : Fix issue.\`);
+`);
+
+		const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri;
+		assert.ok(workspaceRoot, "No workspace folder available for tests");
+		const tempDir = await fs.mkdtemp(
+			path.join(workspaceRoot.fsPath, "tsqllint-workspace-"),
+		);
+		const documentUri = vscode.Uri.file(path.join(tempDir, "query.sql"));
+		await fs.writeFile(documentUri.fsPath, "select 1;", "utf8");
+		const markerPath = path.join(
+			path.dirname(fakeCli.commandPath),
+			"fix-called.txt",
+		);
+
+		let snapshot: Map<string, unknown | undefined> | null = null;
+		try {
+			const config = vscode.workspace.getConfiguration("tsqllint");
+			snapshot = await applyConfig(config, {
+				path: fakeCli.commandPath,
+				runOnSave: false,
+				runOnType: false,
+				fixOnSave: false,
+			});
+
+			let document = await vscode.workspace.openTextDocument(documentUri);
+			document = await vscode.languages.setTextDocumentLanguage(
+				document,
+				"sql",
+			);
+			await vscode.window.showTextDocument(document, { preview: false });
+
+			await vscode.commands.executeCommand("tsqllint-lite.fix");
+
+			const diagnostics = await waitForDiagnostics(
+				document.uri,
+				(entries) => entries.length >= 1,
+				10000,
+			);
+			const match = diagnostics.find(
+				(diag) => diag.source === "tsqllint" && diag.code === "FixRule",
+			);
+			assert.ok(match);
+
+			await fs.stat(markerPath);
+		} finally {
+			const config = vscode.workspace.getConfiguration("tsqllint");
+			if (snapshot) {
+				await restoreConfig(config, snapshot);
+			}
+			await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+			await fakeCli.cleanup();
+			await sleep(100);
+			await removeDir(tempDir);
+		}
+	});
+
+	test("rename clears diagnostics for old URI", async function () {
+		this.timeout(20000);
+		await activateExtension();
+
+		const fakeCli = await createFakeCli(`
+const args = process.argv.slice(2);
+const filePath = args[args.length - 1] || "";
+process.stdout.write(\`\${filePath}(1,1): error RenameRule : Rename issue.\`);
+`);
+
+		const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri;
+		assert.ok(workspaceRoot, "No workspace folder available for tests");
+		const tempDir = await fs.mkdtemp(
+			path.join(workspaceRoot.fsPath, "tsqllint-workspace-"),
+		);
+		const documentUri = vscode.Uri.file(path.join(tempDir, "query.sql"));
+		const renamedUri = vscode.Uri.file(path.join(tempDir, "query-renamed.sql"));
+		await fs.writeFile(documentUri.fsPath, "select 1;", "utf8");
+
+		let snapshot: Map<string, unknown | undefined> | null = null;
+		try {
+			const config = vscode.workspace.getConfiguration("tsqllint");
+			snapshot = await applyConfig(config, {
+				path: fakeCli.commandPath,
+				runOnSave: false,
+				runOnType: false,
+				fixOnSave: false,
+			});
+
+			let document = await vscode.workspace.openTextDocument(documentUri);
+			document = await vscode.languages.setTextDocumentLanguage(
+				document,
+				"sql",
+			);
+			await vscode.window.showTextDocument(document, { preview: false });
+
+			await vscode.commands.executeCommand("tsqllint-lite.run");
+			await waitForDiagnostics(document.uri, (entries) => entries.length >= 1);
+
+			await vscode.workspace.fs.rename(documentUri, renamedUri, {
+				overwrite: true,
+			});
+
+			const cleared = await waitForDiagnostics(
+				documentUri,
+				(entries) => entries.length === 0,
+				10000,
+			);
+			assert.strictEqual(cleared.length, 0);
+		} finally {
+			const config = vscode.workspace.getConfiguration("tsqllint");
+			if (snapshot) {
+				await restoreConfig(config, snapshot);
+			}
+			await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+			await fakeCli.cleanup();
+			await sleep(100);
+			await removeDir(tempDir);
+		}
+	});
+
+	test("delete clears diagnostics for old URI", async function () {
+		this.timeout(20000);
+		await activateExtension();
+
+		const fakeCli = await createFakeCli(`
+const args = process.argv.slice(2);
+const filePath = args[args.length - 1] || "";
+process.stdout.write(\`\${filePath}(1,1): error DeleteRule : Delete issue.\`);
+`);
+
+		const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri;
+		assert.ok(workspaceRoot, "No workspace folder available for tests");
+		const tempDir = await fs.mkdtemp(
+			path.join(workspaceRoot.fsPath, "tsqllint-workspace-"),
+		);
+		const documentUri = vscode.Uri.file(path.join(tempDir, "query.sql"));
+		await fs.writeFile(documentUri.fsPath, "select 1;", "utf8");
+
+		let snapshot: Map<string, unknown | undefined> | null = null;
+		try {
+			const config = vscode.workspace.getConfiguration("tsqllint");
+			snapshot = await applyConfig(config, {
+				path: fakeCli.commandPath,
+				runOnSave: false,
+				runOnType: false,
+				fixOnSave: false,
+			});
+
+			let document = await vscode.workspace.openTextDocument(documentUri);
+			document = await vscode.languages.setTextDocumentLanguage(
+				document,
+				"sql",
+			);
+			await vscode.window.showTextDocument(document, { preview: false });
+
+			await vscode.commands.executeCommand("tsqllint-lite.run");
+			await waitForDiagnostics(document.uri, (entries) => entries.length >= 1);
+
+			await vscode.workspace.fs.delete(documentUri, { recursive: false });
+
+			const cleared = await waitForDiagnostics(
+				documentUri,
+				(entries) => entries.length === 0,
+				10000,
+			);
+			assert.strictEqual(cleared.length, 0);
+		} finally {
+			const config = vscode.workspace.getConfiguration("tsqllint");
+			if (snapshot) {
+				await restoreConfig(config, snapshot);
+			}
+			await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+			await fakeCli.cleanup();
+			await sleep(100);
+			await removeDir(tempDir);
 		}
 	});
 });
 
 async function waitForDiagnostics(
 	uri: vscode.Uri,
-	expectedCount: number,
+	predicate: (diagnostics: vscode.Diagnostic[]) => boolean,
 	timeoutMs = 5000,
 ): Promise<vscode.Diagnostic[]> {
 	const existing = vscode.languages.getDiagnostics(uri);
-	if (existing.length >= expectedCount) {
+	if (predicate(existing)) {
 		return existing;
 	}
 
@@ -128,13 +394,60 @@ async function waitForDiagnostics(
 				return;
 			}
 			const current = vscode.languages.getDiagnostics(uri);
-			if (current.length < expectedCount) {
+			if (!predicate(current)) {
 				return;
 			}
 			clearTimeout(timeout);
 			subscription?.dispose();
 			resolve(current);
 		});
+	});
+}
+
+async function applyConfig(
+	config: vscode.WorkspaceConfiguration,
+	updates: Record<string, unknown>,
+): Promise<Map<string, unknown | undefined>> {
+	const snapshot = new Map<string, unknown | undefined>();
+	for (const [key, value] of Object.entries(updates)) {
+		const previous = config.inspect(key)?.workspaceValue;
+		snapshot.set(key, previous);
+		await config.update(key, value, vscode.ConfigurationTarget.Workspace);
+	}
+	return snapshot;
+}
+
+async function restoreConfig(
+	config: vscode.WorkspaceConfiguration,
+	snapshot: Map<string, unknown | undefined>,
+): Promise<void> {
+	for (const [key, value] of snapshot.entries()) {
+		await config.update(
+			key,
+			value === undefined ? null : value,
+			vscode.ConfigurationTarget.Workspace,
+		);
+	}
+}
+
+async function activateExtension(): Promise<void> {
+	const extension = vscode.extensions.all.find(
+		(ext) => ext.packageJSON?.name === "tsqllint-lite",
+	);
+	assert.ok(extension, "Extension tsqllint-lite not found");
+	const api = (await extension.activate()) as { clientReady?: Promise<void> };
+	const clientReady = api.clientReady;
+	if (clientReady) {
+		await clientReady;
+	}
+}
+
+async function removeDir(dirPath: string): Promise<void> {
+	await fs.rm(dirPath, {
+		recursive: true,
+		force: true,
+		maxRetries: 30,
+		retryDelay: 100,
 	});
 }
 

@@ -42,4 +42,74 @@ process.stdout.write(JSON.stringify(args));
 			await fs.rm(tempDir, { recursive: true, force: true });
 		}
 	});
+
+	test("returns timedOut when process exceeds timeout", async () => {
+		const fakeCli = await createFakeCli(`
+setTimeout(() => {
+	process.stdout.write("late output");
+}, 2000);
+`);
+		const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "tsqllint-test-"));
+		const filePath = path.join(tempDir, "query.sql");
+		await fs.writeFile(filePath, "select 1;", "utf8");
+
+		try {
+			const result = await runTsqllint({
+				filePath,
+				cwd: tempDir,
+				settings: {
+					...defaultSettings,
+					path: fakeCli.commandPath,
+					timeoutMs: 200,
+				},
+				signal: new AbortController().signal,
+				fix: false,
+			});
+
+			assert.strictEqual(result.timedOut, true);
+			assert.strictEqual(result.cancelled, false);
+			assert.strictEqual(result.exitCode, null);
+		} finally {
+			await fakeCli.cleanup();
+			await fs.rm(tempDir, { recursive: true, force: true });
+		}
+	});
+
+	test("returns cancelled when aborted", async () => {
+		const fakeCli = await createFakeCli(`
+setTimeout(() => {
+	process.stdout.write("late output");
+}, 2000);
+`);
+		const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), "tsqllint-test-"));
+		const filePath = path.join(tempDir, "query.sql");
+		await fs.writeFile(filePath, "select 1;", "utf8");
+		const controller = new AbortController();
+
+		try {
+			const runPromise = runTsqllint({
+				filePath,
+				cwd: tempDir,
+				settings: {
+					...defaultSettings,
+					path: fakeCli.commandPath,
+					timeoutMs: 2000,
+				},
+				signal: controller.signal,
+				fix: false,
+			});
+
+			setTimeout(() => {
+				controller.abort();
+			}, 100);
+
+			const result = await runPromise;
+			assert.strictEqual(result.cancelled, true);
+			assert.strictEqual(result.timedOut, false);
+			assert.strictEqual(result.exitCode, null);
+		} finally {
+			await fakeCli.cleanup();
+			await fs.rm(tempDir, { recursive: true, force: true });
+		}
+	});
 });

@@ -108,4 +108,27 @@ suite("parseOutput", () => {
 
 		assert.strictEqual(diagnostics.length, 0);
 	});
+
+	test("maps diagnostics from targetPaths (temp file)", () => {
+		const cwd = path.resolve("workspace");
+		const filePath = path.join(cwd, "query.sql");
+		const tempPath = path.join(cwd, "temp.sql");
+		const uri = URI.file(filePath).toString();
+		const stdout = `${tempPath}(1,2): warning RuleZ : Temp hit.`;
+		const lines = ["select 1;"];
+
+		const diagnostics = parseOutput({
+			stdout,
+			uri,
+			cwd,
+			lines,
+			targetPaths: [tempPath],
+		});
+
+		assert.strictEqual(diagnostics.length, 1);
+		const diag = diagnostics[0];
+		assert.ok(diag);
+		assert.strictEqual(diag.code, "RuleZ");
+		assert.strictEqual(diag.message, "Temp hit");
+	});
 });

@@ -80,6 +80,7 @@
 		"lint": "biome lint .",
 		"format": "biome format --write .",
 		"test": "vscode-test",
+		"test:e2e": "vscode-test --config .vscode-test.e2e.mjs",
 		"watch": "tsc -watch -p tsconfig.json"
 	},
 	"devDependencies": {
