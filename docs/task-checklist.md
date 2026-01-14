@@ -67,12 +67,12 @@
 - [x] Integration test with fake CLI for `runTsqllint`.
 - [x] Extension test to verify Problems panel updates.
 - [x] Local-only E2E test: run real `tsqllint` binary if installed (skip when missing).
-- [ ] Extension test: `tsqllint-lite.run` updates diagnostics (works even when `runOnSave=false`).
-- [ ] Extension test: run-on-type (`runOnType=true`) runs on unsaved edits (temp file flow).
-- [ ] Extension test: fix flow (`tsqllint-lite.fix` or `fixOnSave=true`) runs `--fix` then re-lints (diagnostics refresh).
-- [ ] Extension test: delete/rename clears diagnostics via `tsqllint/clearDiagnostics` (old URI becomes empty).
-- [ ] Unit/integration tests for `runTsqllint`: timeout (`timedOut=true`) and abort (`cancelled=true`) paths.
-- [ ] Unit test for `parseOutput`: `targetPaths` allows mapping temp file output back to original URI.
+- [x] Extension test: `tsqllint-lite.run` updates diagnostics (works even when `runOnSave=false`).
+- [x] Extension test: run-on-type (`runOnType=true`) runs on unsaved edits (temp file flow).
+- [x] Extension test: fix flow (`tsqllint-lite.fix` or `fixOnSave=true`) runs `--fix` then re-lints (diagnostics refresh).
+- [x] Extension test: delete/rename clears diagnostics via `tsqllint/clearDiagnostics` (old URI becomes empty).
+- [x] Unit/integration tests for `runTsqllint`: timeout (`timedOut=true`) and abort (`cancelled=true`) paths.
+- [x] Unit test for `parseOutput`: `targetPaths` allows mapping temp file output back to original URI.
 
 ## 11. Release readiness (pre-publish)
 - [ ] Replace template `README.md` with real docs (commands, settings, usage, limitations).
