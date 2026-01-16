@@ -2,7 +2,6 @@ export type LintReason = "save" | "type" | "manual";
 export type PendingLint = {
 	reason: LintReason;
 	version: number | null;
-	fix: boolean;
 };
 
 type SchedulerOptions = {
@@ -78,11 +77,10 @@ export class LintScheduler {
 	requestLint(
 		uri: string,
 		reason: LintReason,
-		fix: boolean,
 		version: number | null,
 		debounceMs?: number,
 	): Promise<number> {
-		this.pendingByUri.set(uri, { reason, version, fix });
+		this.pendingByUri.set(uri, { reason, version });
 		if (reason === "manual") {
 			return this.runWhenPossible(uri);
 		}

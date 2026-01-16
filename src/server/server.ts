@@ -86,17 +86,8 @@ documents.onDidClose((change) => {
 connection.onRequest(
 	"tsqllint/lintDocument",
 	async (params: { uri: string }) => {
-		const issues = await requestLint(params.uri, "manual", false, null);
+		const issues = await requestLint(params.uri, "manual", null);
 		return { ok: issues >= 0, issues: Math.max(0, issues) };
-	},
-);
-
-connection.onRequest(
-	"tsqllint/fixDocument",
-	async (params: { uri: string }) => {
-		const result = await requestLint(params.uri, "manual", true, null);
-		const ok = result >= 0;
-		return { ok };
 	},
 );
 
@@ -132,13 +123,7 @@ async function handleDidChangeContent(document: TextDocument): Promise<void> {
 		if (!docSettings.runOnType) {
 			return;
 		}
-		requestLint(
-			document.uri,
-			"type",
-			false,
-			document.version,
-			docSettings.debounceMs,
-		);
+		requestLint(document.uri, "type", document.version, docSettings.debounceMs);
 	} catch (error) {
 		connection.console.error(
 			`tsqllint: failed to react to change (${String(error)})`,
@@ -151,12 +136,8 @@ async function handleDidSave(document: TextDocument): Promise<void> {
 		const uri = document.uri;
 		savedVersionByUri.set(uri, document.version);
 		const docSettings = await getSettingsForDocument(uri);
-		if (docSettings.fixOnSave) {
-			requestLint(uri, "save", true, document.version);
-			return;
-		}
 		if (docSettings.runOnSave) {
-			requestLint(uri, "save", false, document.version);
+			requestLint(uri, "save", document.version);
 		}
 	} catch (error) {
 		connection.console.error(
@@ -188,7 +169,6 @@ function normalizeSettings(value: TsqllintSettings): TsqllintSettings {
 async function requestLint(
 	uri: string,
 	reason: LintReason,
-	fix: boolean,
 	version: number | null,
 	debounceMs?: number,
 ): Promise<number> {
@@ -197,13 +177,7 @@ async function requestLint(
 		return 0;
 	}
 	const finalVersion = version ?? document.version;
-	return await scheduler.requestLint(
-		uri,
-		reason,
-		fix,
-		finalVersion,
-		debounceMs,
-	);
+	return await scheduler.requestLint(uri, reason, finalVersion, debounceMs);
 }
 
 function cancelInFlight(uri: string): void {
@@ -219,14 +193,10 @@ async function runLintWithCancel(
 	pending: PendingLint,
 ): Promise<number> {
 	cancelInFlight(uri);
-	return await runLintNow(uri, pending.reason, pending.fix);
+	return await runLintNow(uri, pending.reason);
 }
 
-async function runLintNow(
-	uri: string,
-	reason: LintReason,
-	fix: boolean,
-): Promise<number> {
+async function runLintNow(uri: string, reason: LintReason): Promise<number> {
 	const document = documents.get(uri);
 	if (!document) {
 		return 0;
@@ -242,14 +212,6 @@ async function runLintNow(
 	let targetFilePath = filePath;
 	const isSavedFile = isSaved(document);
 
-	if (fix && !isSavedFile) {
-		await connection.window.showWarningMessage(
-			"tsqllint: --fix requires a saved file.",
-		);
-		inFlightByUri.delete(uri);
-		return -1;
-	}
-
 	if (!isSavedFile) {
 		tempInfo = await createTempFile(document.getText());
 		targetFilePath = tempInfo.filePath;
@@ -264,7 +226,6 @@ async function runLintNow(
 			cwd,
 			settings: documentSettings,
 			signal: controller.signal,
-			fix,
 		});
 	} catch (error) {
 		inFlightByUri.delete(uri);
@@ -293,12 +254,6 @@ async function runLintNow(
 
 	if (result.stderr.trim()) {
 		await notifyStderr(result.stderr);
-	}
-
-	if (fix) {
-		await notifyFixResult(result.stdout);
-		await cleanupTemp(tempInfo);
-		return await runLintNow(uri, reason, false);
 	}
 
 	const diagnostics = parseOutput({
@@ -381,20 +336,6 @@ async function notifyStderr(stderr: string): Promise<void> {
 	}
 	await connection.window.showWarningMessage(`tsqllint: ${firstLine(trimmed)}`);
 	connection.console.warn(trimmed);
-}
-
-async function notifyFixResult(stdout: string): Promise<void> {
-	const match = stdout.match(/(\d+)\s+Fixed\b/);
-	if (!match) {
-		return;
-	}
-	const count = Number(match[1]);
-	if (Number.isNaN(count)) {
-		return;
-	}
-	await connection.window.showInformationMessage(
-		`tsqllint: ${count} issues fixed.`,
-	);
 }
 
 function firstLine(text: string): string {

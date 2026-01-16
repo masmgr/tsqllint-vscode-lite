@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is `tsqllint-lite`, a VS Code extension that integrates TSQLLint (a T-SQL linter) into the editor. It provides real-time linting for SQL files with support for both manual and automatic linting, including fix-on-save functionality.
+This is `tsqllint-lite`, a VS Code extension that integrates TSQLLint (a T-SQL linter) into the editor. It provides real-time linting for SQL files with support for both manual and automatic linting.
 
 ## Build and Test Commands
 
@@ -38,7 +38,7 @@ This extension uses the **Language Server Protocol (LSP)** architecture with sep
 
 - **Client** ([src/client/client.ts](src/client/client.ts)): Runs in the VS Code extension host
   - Creates and manages the LanguageClient connection
-  - Registers commands (`tsqllint-lite.run`, `tsqllint-lite.fix`)
+  - Registers commands (`tsqllint-lite.run`)
   - Handles file lifecycle events (delete, rename)
 
 - **Server** ([src/server/server.ts](src/server/server.ts)): Runs in a separate Node.js process
@@ -71,7 +71,6 @@ Executes the tsqllint CLI with proper process management:
 - **Windows handling**: Wraps `.cmd`/`.bat` files with `cmd.exe /c`
 - **Timeout protection**: Kills processes exceeding `settings.timeoutMs` (default 10s)
 - **Cancellation support**: Respects AbortSignal for clean cancellation
-- **Fix mode**: Supports `--fix` flag for auto-fixing issues
 
 #### 3. Output Parser ([src/server/lint/parseOutput.ts](src/server/lint/parseOutput.ts))
 
@@ -87,7 +86,6 @@ Parses tsqllint output into VS Code diagnostics:
 
 The server tracks document state throughout its lifecycle:
 - **Unsaved documents**: Creates temporary files in `os.tmpdir()` for linting
-- **Fix restrictions**: `--fix` only works on saved files (shows warning otherwise)
 - **Version tracking**: Uses `savedVersionByUri` to distinguish saved vs modified states
 - **Cleanup**: Removes temporary files and clears diagnostics on document close
 
@@ -108,7 +106,6 @@ The extension contributes these settings (namespace: `tsqllint`):
 - `path`: Custom tsqllint executable path (default: searches PATH)
 - `configPath`: TSQLLint config file path (passed as `-c` argument)
 - `runOnSave`: Auto-lint on save (default: true)
-- `fixOnSave`: Auto-fix on save (default: false)
 - `runOnType`: Lint while typing (default: false)
 - `debounceMs`: Debounce delay for typing (default: 500)
 - `timeoutMs`: Process timeout (default: 10000)
@@ -139,7 +136,6 @@ Use the fake CLI helper ([src/test/helpers/fakeCli.ts](src/test/helpers/fakeCli.
 ### Error Handling
 - TSQLLint errors go to stderr and are shown as warnings
 - CLI spawn errors reject the promise and clear diagnostics
-- Fix failures on unsaved files show user-friendly messages
 
 ### TypeScript Configuration
 This project uses strict TypeScript settings including:

@@ -9,7 +9,6 @@ export type RunTsqllintOptions = {
 	cwd: string;
 	settings: TsqllintSettings;
 	signal: AbortSignal;
-	fix?: boolean;
 };
 
 export async function runTsqllint(
@@ -145,9 +144,6 @@ function resolveSpawn(
 function buildArgs(options: RunTsqllintOptions): string[] {
 	const args: string[] = [];
 	const configPath = normalizeConfigPath(options.settings.configPath);
-	if (options.fix) {
-		args.push("--fix");
-	}
 	if (configPath) {
 		args.push("-c", configPath);
 	}

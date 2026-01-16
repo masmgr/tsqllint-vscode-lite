@@ -30,7 +30,6 @@ process.stdout.write(\`\${filePath}(1,1): error FakeRule : Fake issue.\`);
 			snapshot = await applyConfig(config, {
 				path: fakeCli.commandPath,
 				runOnSave: true,
-				fixOnSave: false,
 			});
 
 			let document = await vscode.workspace.openTextDocument(documentUri);
@@ -93,7 +92,6 @@ process.stdout.write(\`\${filePath}(1,1): error ManualRule : Manual issue.\`);
 				path: fakeCli.commandPath,
 				runOnSave: false,
 				runOnType: false,
-				fixOnSave: false,
 			});
 
 			let document = await vscode.workspace.openTextDocument(documentUri);
@@ -144,7 +142,6 @@ process.stdout.write(\`\${filePath}(1,1): warning TypeRule : Typed issue.\`);
 				runOnType: true,
 				debounceMs: 50,
 				runOnSave: false,
-				fixOnSave: false,
 			});
 
 			const document = await vscode.workspace.openTextDocument({
@@ -178,78 +175,6 @@ process.stdout.write(\`\${filePath}(1,1): warning TypeRule : Typed issue.\`);
 		}
 	});
 
-	test("fix command runs --fix and refreshes diagnostics", async function () {
-		this.timeout(20000);
-		await activateExtension();
-
-		const fakeCli = await createFakeCli(`
-const fs = require("node:fs");
-const path = require("node:path");
-const args = process.argv.slice(2);
-const marker = path.join(__dirname, "fix-called.txt");
-if (args.includes("--fix")) {
-	fs.writeFileSync(marker, "fixed");
-	process.stdout.write("1 Fixed");
-	return;
-}
-const filePath = args[args.length - 1] || "";
-process.stdout.write(\`\${filePath}(1,1): error FixRule : Fix issue.\`);
-`);
-
-		const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri;
-		assert.ok(workspaceRoot, "No workspace folder available for tests");
-		const tempDir = await fs.mkdtemp(
-			path.join(workspaceRoot.fsPath, "tsqllint-workspace-"),
-		);
-		const documentUri = vscode.Uri.file(path.join(tempDir, "query.sql"));
-		await fs.writeFile(documentUri.fsPath, "select 1;", "utf8");
-		const markerPath = path.join(
-			path.dirname(fakeCli.commandPath),
-			"fix-called.txt",
-		);
-
-		let snapshot: Map<string, unknown | undefined> | null = null;
-		try {
-			const config = vscode.workspace.getConfiguration("tsqllint");
-			snapshot = await applyConfig(config, {
-				path: fakeCli.commandPath,
-				runOnSave: false,
-				runOnType: false,
-				fixOnSave: false,
-			});
-
-			let document = await vscode.workspace.openTextDocument(documentUri);
-			document = await vscode.languages.setTextDocumentLanguage(
-				document,
-				"sql",
-			);
-			await vscode.window.showTextDocument(document, { preview: false });
-
-			await vscode.commands.executeCommand("tsqllint-lite.fix");
-
-			const diagnostics = await waitForDiagnostics(
-				document.uri,
-				(entries) => entries.length >= 1,
-				10000,
-			);
-			const match = diagnostics.find(
-				(diag) => diag.source === "tsqllint" && diag.code === "FixRule",
-			);
-			assert.ok(match);
-
-			await fs.stat(markerPath);
-		} finally {
-			const config = vscode.workspace.getConfiguration("tsqllint");
-			if (snapshot) {
-				await restoreConfig(config, snapshot);
-			}
-			await vscode.commands.executeCommand("workbench.action.closeAllEditors");
-			await fakeCli.cleanup();
-			await sleep(100);
-			await removeDir(tempDir);
-		}
-	});
-
 	test("rename clears diagnostics for old URI", async function () {
 		this.timeout(20000);
 		await activateExtension();
@@ -276,7 +201,6 @@ process.stdout.write(\`\${filePath}(1,1): error RenameRule : Rename issue.\`);
 				path: fakeCli.commandPath,
 				runOnSave: false,
 				runOnType: false,
-				fixOnSave: false,
 			});
 
 			let document = await vscode.workspace.openTextDocument(documentUri);
@@ -336,7 +260,6 @@ process.stdout.write(\`\${filePath}(1,1): error DeleteRule : Delete issue.\`);
 				path: fakeCli.commandPath,
 				runOnSave: false,
 				runOnType: false,
-				fixOnSave: false,
 			});
 
 			let document = await vscode.workspace.openTextDocument(documentUri);

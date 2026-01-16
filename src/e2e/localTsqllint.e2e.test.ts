@@ -32,7 +32,6 @@ suite("E2E (local): real tsqllint binary", () => {
 					timeoutMs: 20000,
 				},
 				signal: new AbortController().signal,
-				fix: false,
 			});
 
 			assert.strictEqual(result.timedOut, false);

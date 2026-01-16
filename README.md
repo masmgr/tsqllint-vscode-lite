@@ -5,8 +5,7 @@ A Visual Studio Code extension that integrates [TSQLLint](https://github.com/tsq
 ## Features
 
 - **Real-time linting**: Automatically lint SQL files as you type or save
-- **Auto-fix on save**: Automatically fix linting issues when saving files
-- **Manual commands**: Run lint or fix commands on demand
+- **Manual commands**: Run lint commands on demand
 - **Customizable**: Configure lint behavior, timeouts, and diagnostic display
 - **Language Server Protocol**: Uses LSP architecture for efficient, non-blocking operation
 
@@ -68,11 +67,6 @@ This extension contributes the following settings under the `tsqllint` namespace
 - **Default**: `true`
 - **Description**: Automatically run lint when a SQL document is saved.
 
-### `tsqllint.fixOnSave`
-- **Type**: `boolean`
-- **Default**: `false`
-- **Description**: Automatically run `tsqllint --fix` on save for saved files. Note: This only works for files that are already saved to disk, not for unsaved documents.
-
 ### `tsqllint.runOnType`
 - **Type**: `boolean`
 - **Default**: `false`
@@ -103,7 +97,6 @@ This extension contributes the following settings under the `tsqllint` namespace
 ```json
 {
   "tsqllint.runOnSave": true,
-  "tsqllint.fixOnSave": false,
   "tsqllint.runOnType": false
 }
 ```
@@ -115,7 +108,6 @@ This extension contributes the following settings under the `tsqllint` namespace
   "tsqllint.path": "C:\\tools\\tsqllint\\tsqllint.exe",
   "tsqllint.configPath": "${workspaceFolder}/.tsqllintrc",
   "tsqllint.runOnSave": true,
-  "tsqllint.fixOnSave": true,
   "tsqllint.runOnType": true,
   "tsqllint.debounceMs": 1000,
   "tsqllint.timeoutMs": 15000,
@@ -141,12 +133,6 @@ This extension provides the following commands:
 - **Command ID**: `tsqllint-lite.run`
 - **Description**: Manually run lint on the current SQL file
 - **Usage**: Command Palette (Ctrl+Shift+P / Cmd+Shift+P) → "TSQLLint: Run"
-
-### `TSQLLint: Fix`
-- **Command ID**: `tsqllint-lite.fix`
-- **Description**: Run `tsqllint --fix` to automatically fix linting issues
-- **Usage**: Command Palette (Ctrl+Shift+P / Cmd+Shift+P) → "TSQLLint: Fix"
-- **Note**: Only works on files that are saved to disk. Unsaved documents will show a warning.
 
 ## How It Works
 
@@ -203,12 +189,6 @@ This extension uses the **Language Server Protocol (LSP)** architecture:
    ```
 3. Use manual lint commands instead of automatic linting
 
-### Fix on Save doesn't work for unsaved files
-
-**Cause**: TSQLLint's `--fix` flag only works on files saved to disk.
-
-**Solution**: Save the file first (Ctrl+S / Cmd+S), then the fix will be applied on the next save.
-
 ### Diagnostics show entire line instead of specific character
 
 **Cause**: `rangeMode` is set to `"line"`.
@@ -250,7 +230,6 @@ or
 
 ## Known Issues
 
-- Fix on save only works for files that are already saved to disk
 - The extension currently only activates for files with the "sql" language ID
 - On Windows, `.cmd` and `.bat` executables are wrapped with `cmd.exe /c`
 
@@ -260,8 +239,7 @@ or
 
 Initial release of tsqllint-lite:
 - Real-time linting with LSP architecture
-- Auto-fix on save
-- Manual lint and fix commands
+- Manual lint commands
 - Configurable timeout and debouncing
 - Support for custom tsqllint paths and config files
 - Character and line range modes for diagnostics

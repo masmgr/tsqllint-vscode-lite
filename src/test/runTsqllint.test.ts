@@ -29,11 +29,10 @@ process.stdout.write(JSON.stringify(args));
 					timeoutMs: 2000,
 				},
 				signal: new AbortController().signal,
-				fix: true,
 			});
 
 			const args = JSON.parse(result.stdout);
-			assert.deepStrictEqual(args, ["--fix", "-c", configPath, filePath]);
+			assert.deepStrictEqual(args, ["-c", configPath, filePath]);
 			assert.strictEqual(result.exitCode, 0);
 			assert.strictEqual(result.timedOut, false);
 			assert.strictEqual(result.cancelled, false);
@@ -63,7 +62,6 @@ setTimeout(() => {
 					timeoutMs: 200,
 				},
 				signal: new AbortController().signal,
-				fix: false,
 			});
 
 			assert.strictEqual(result.timedOut, true);
@@ -96,7 +94,6 @@ setTimeout(() => {
 					timeoutMs: 2000,
 				},
 				signal: controller.signal,
-				fix: false,
 			});
 
 			setTimeout(() => {
