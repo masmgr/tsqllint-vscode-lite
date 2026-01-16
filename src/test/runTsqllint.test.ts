@@ -4,7 +4,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { defaultSettings } from "../server/config/settings";
 import { runTsqllint } from "../server/lint/runTsqllint";
-import { createFakeCli } from "./helpers/fakeCli";
+import { createFakeCli, rmWithRetry } from "./helpers/fakeCli";
 
 suite("runTsqllint", () => {
 	test("runs configured executable and captures output", async () => {
@@ -38,11 +38,12 @@ process.stdout.write(JSON.stringify(args));
 			assert.strictEqual(result.cancelled, false);
 		} finally {
 			await fakeCli.cleanup();
-			await fs.rm(tempDir, { recursive: true, force: true });
+			await rmWithRetry(tempDir);
 		}
 	});
 
-	test("returns timedOut when process exceeds timeout", async () => {
+	test("returns timedOut when process exceeds timeout", async function () {
+		this.timeout(5000);
 		const fakeCli = await createFakeCli(`
 setTimeout(() => {
 	process.stdout.write("late output");
@@ -68,8 +69,9 @@ setTimeout(() => {
 			assert.strictEqual(result.cancelled, false);
 			assert.strictEqual(result.exitCode, null);
 		} finally {
+			await new Promise((r) => setTimeout(r, 100));
 			await fakeCli.cleanup();
-			await fs.rm(tempDir, { recursive: true, force: true });
+			await rmWithRetry(tempDir);
 		}
 	});
 
@@ -106,7 +108,7 @@ setTimeout(() => {
 			assert.strictEqual(result.exitCode, null);
 		} finally {
 			await fakeCli.cleanup();
-			await fs.rm(tempDir, { recursive: true, force: true });
+			await rmWithRetry(tempDir);
 		}
 	});
 });

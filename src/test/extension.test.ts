@@ -216,6 +216,7 @@ process.stdout.write(\`\${filePath}(1,1): error RenameRule : Rename issue.\`);
 			await vscode.workspace.fs.rename(documentUri, renamedUri, {
 				overwrite: true,
 			});
+			await sleep(100);
 
 			const cleared = await waitForDiagnostics(
 				documentUri,
@@ -273,6 +274,7 @@ process.stdout.write(\`\${filePath}(1,1): error DeleteRule : Delete issue.\`);
 			await waitForDiagnostics(document.uri, (entries) => entries.length >= 1);
 
 			await vscode.workspace.fs.delete(documentUri, { recursive: false });
+			await sleep(100);
 
 			const cleared = await waitForDiagnostics(
 				documentUri,

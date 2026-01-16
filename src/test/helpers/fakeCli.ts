@@ -7,6 +7,33 @@ export type FakeCli = {
 	cleanup: () => Promise<void>;
 };
 
+export async function rmWithRetry(
+	target: string,
+	maxRetries = 30,
+	delayMs = 100,
+): Promise<void> {
+	for (let i = 0; i < maxRetries; i++) {
+		try {
+			await fs.rm(target, { recursive: true, force: true });
+			return;
+		} catch (error) {
+			const isRetriable =
+				error &&
+				typeof error === "object" &&
+				"code" in error &&
+				(error.code === "EBUSY" ||
+					error.code === "EPERM" ||
+					error.code === "ENOTEMPTY");
+
+			if (isRetriable && i < maxRetries - 1) {
+				await new Promise((r) => setTimeout(r, delayMs));
+				continue;
+			}
+			throw error;
+		}
+	}
+}
+
 export async function createFakeCli(scriptBody: string): Promise<FakeCli> {
 	const dir = await fs.mkdtemp(path.join(os.tmpdir(), "tsqllint-fake-"));
 	const scriptPath = path.join(dir, "fake-tsqllint.js");
@@ -29,7 +56,7 @@ export async function createFakeCli(scriptBody: string): Promise<FakeCli> {
 	return {
 		commandPath,
 		cleanup: async () => {
-			await fs.rm(dir, { recursive: true, force: true });
+			await rmWithRetry(dir);
 		},
 	};
 }
