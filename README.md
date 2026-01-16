@@ -1,71 +1,279 @@
-# tsqllint-lite README
+# tsqllint-lite
 
-This is the README for your extension "tsqllint-lite". After writing up a brief description, we recommend including the following sections.
+A Visual Studio Code extension that integrates [TSQLLint](https://github.com/tsqllint/tsqllint) into your editor, providing real-time linting for T-SQL files.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
-
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+- **Real-time linting**: Automatically lint SQL files as you type or save
+- **Auto-fix on save**: Automatically fix linting issues when saving files
+- **Manual commands**: Run lint or fix commands on demand
+- **Customizable**: Configure lint behavior, timeouts, and diagnostic display
+- **Language Server Protocol**: Uses LSP architecture for efficient, non-blocking operation
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+**TSQLLint CLI must be installed separately.** This extension is a VS Code integration for TSQLLint.
+
+### Installing TSQLLint
+
+#### Using .NET CLI (recommended):
+```bash
+dotnet tool install -g TSQLLint
+```
+
+#### Using Chocolatey (Windows):
+```bash
+choco install tsqllint
+```
+
+#### Manual installation:
+Download from the [TSQLLint releases page](https://github.com/tsqllint/tsqllint/releases).
+
+After installation, verify TSQLLint is available:
+```bash
+tsqllint --version
+```
+
+## Installation
+
+### From VS Code Marketplace:
+1. Open VS Code
+2. Go to Extensions (Ctrl+Shift+X / Cmd+Shift+X)
+3. Search for "tsqllint-lite"
+4. Click Install
+
+### From VSIX file:
+```bash
+code --install-extension tsqllint-lite-0.0.1.vsix
+```
 
 ## Extension Settings
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+This extension contributes the following settings under the `tsqllint` namespace:
 
-For example:
+### `tsqllint.path`
+- **Type**: `string`
+- **Default**: `""` (searches PATH)
+- **Description**: Path to the tsqllint executable. Leave empty to use the tsqllint found in your PATH.
+- **Example**: `"C:\\tools\\tsqllint\\tsqllint.exe"` or `"/usr/local/bin/tsqllint"`
 
-This extension contributes the following settings:
+### `tsqllint.configPath`
+- **Type**: `string`
+- **Default**: `""` (uses tsqllint default)
+- **Description**: Path to your TSQLLint configuration file (`.tsqllintrc`). Passed as the `-c` argument to tsqllint.
+- **Example**: `"${workspaceFolder}/.tsqllintrc"`
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+### `tsqllint.runOnSave`
+- **Type**: `boolean`
+- **Default**: `true`
+- **Description**: Automatically run lint when a SQL document is saved.
+
+### `tsqllint.fixOnSave`
+- **Type**: `boolean`
+- **Default**: `false`
+- **Description**: Automatically run `tsqllint --fix` on save for saved files. Note: This only works for files that are already saved to disk, not for unsaved documents.
+
+### `tsqllint.runOnType`
+- **Type**: `boolean`
+- **Default**: `false`
+- **Description**: Run lint while typing (debounced). Useful for real-time feedback but may impact performance on large files.
+
+### `tsqllint.debounceMs`
+- **Type**: `number`
+- **Default**: `500`
+- **Description**: Debounce time in milliseconds for run-on-type. Higher values reduce CPU usage but increase delay before seeing lint results.
+
+### `tsqllint.timeoutMs`
+- **Type**: `number`
+- **Default**: `10000` (10 seconds)
+- **Description**: Timeout in milliseconds for lint execution. If tsqllint takes longer than this, the process will be killed.
+
+### `tsqllint.rangeMode`
+- **Type**: `string`
+- **Enum**: `"character"` | `"line"`
+- **Default**: `"character"`
+- **Description**: Diagnostic range mode for reported issues.
+  - `"character"`: Highlights only the specific character where the issue occurs
+  - `"line"`: Highlights the entire line
+
+## Configuration Examples
+
+### Basic Configuration (`.vscode/settings.json`)
+
+```json
+{
+  "tsqllint.runOnSave": true,
+  "tsqllint.fixOnSave": false,
+  "tsqllint.runOnType": false
+}
+```
+
+### Advanced Configuration with Custom Path and Config
+
+```json
+{
+  "tsqllint.path": "C:\\tools\\tsqllint\\tsqllint.exe",
+  "tsqllint.configPath": "${workspaceFolder}/.tsqllintrc",
+  "tsqllint.runOnSave": true,
+  "tsqllint.fixOnSave": true,
+  "tsqllint.runOnType": true,
+  "tsqllint.debounceMs": 1000,
+  "tsqllint.timeoutMs": 15000,
+  "tsqllint.rangeMode": "line"
+}
+```
+
+### Real-time Linting Setup
+
+```json
+{
+  "tsqllint.runOnType": true,
+  "tsqllint.debounceMs": 500,
+  "tsqllint.rangeMode": "character"
+}
+```
+
+## Commands
+
+This extension provides the following commands:
+
+### `TSQLLint: Run`
+- **Command ID**: `tsqllint-lite.run`
+- **Description**: Manually run lint on the current SQL file
+- **Usage**: Command Palette (Ctrl+Shift+P / Cmd+Shift+P) → "TSQLLint: Run"
+
+### `TSQLLint: Fix`
+- **Command ID**: `tsqllint-lite.fix`
+- **Description**: Run `tsqllint --fix` to automatically fix linting issues
+- **Usage**: Command Palette (Ctrl+Shift+P / Cmd+Shift+P) → "TSQLLint: Fix"
+- **Note**: Only works on files that are saved to disk. Unsaved documents will show a warning.
+
+## How It Works
+
+This extension uses the **Language Server Protocol (LSP)** architecture:
+
+1. **Client** (runs in VS Code extension host):
+   - Manages the language client connection
+   - Registers commands and file lifecycle events
+
+2. **Server** (runs in a separate Node.js process):
+   - Handles document synchronization
+   - Manages lint scheduling with concurrency control
+   - Spawns tsqllint CLI processes
+   - Parses output and sends diagnostics back to the client
+
+3. **Lint Scheduler**:
+   - Limits to 4 concurrent lint processes
+   - Debounces typing events to prevent excessive linting
+   - Tracks document versions to ensure lints run against correct content
+
+## Troubleshooting
+
+### "tsqllint not found" or "Command failed: tsqllint"
+
+**Cause**: The tsqllint executable is not in your PATH or the specified path is incorrect.
+
+**Solutions**:
+1. Verify tsqllint is installed: `tsqllint --version`
+2. If not installed, follow the [installation instructions](#installing-tsqllint)
+3. If installed but not in PATH, set `tsqllint.path` in your settings:
+   ```json
+   {
+     "tsqllint.path": "C:\\path\\to\\tsqllint.exe"
+   }
+   ```
+4. Restart VS Code after changing settings
+
+### Linting is slow or times out
+
+**Cause**: Large files or complex queries may take longer than the default timeout.
+
+**Solutions**:
+1. Increase the timeout in settings:
+   ```json
+   {
+     "tsqllint.timeoutMs": 30000
+   }
+   ```
+2. Disable run-on-type for large files:
+   ```json
+   {
+     "tsqllint.runOnType": false
+   }
+   ```
+3. Use manual lint commands instead of automatic linting
+
+### Fix on Save doesn't work for unsaved files
+
+**Cause**: TSQLLint's `--fix` flag only works on files saved to disk.
+
+**Solution**: Save the file first (Ctrl+S / Cmd+S), then the fix will be applied on the next save.
+
+### Diagnostics show entire line instead of specific character
+
+**Cause**: `rangeMode` is set to `"line"`.
+
+**Solution**: Change to character mode:
+```json
+{
+  "tsqllint.rangeMode": "character"
+}
+```
+
+### Path issues on Windows
+
+**Cause**: Windows paths require proper escaping in JSON.
+
+**Solution**: Use double backslashes or forward slashes:
+```json
+{
+  "tsqllint.path": "C:\\tools\\tsqllint.exe"
+}
+```
+or
+```json
+{
+  "tsqllint.path": "C:/tools/tsqllint.exe"
+}
+```
+
+### Config file not being used
+
+**Cause**: The `configPath` is not set or points to an incorrect location.
+
+**Solution**: Set the config path explicitly:
+```json
+{
+  "tsqllint.configPath": "${workspaceFolder}/.tsqllintrc"
+}
+```
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- Fix on save only works for files that are already saved to disk
+- The extension currently only activates for files with the "sql" language ID
+- On Windows, `.cmd` and `.bat` executables are wrapped with `cmd.exe /c`
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
+### 0.0.1
 
-### 1.0.0
+Initial release of tsqllint-lite:
+- Real-time linting with LSP architecture
+- Auto-fix on save
+- Manual lint and fix commands
+- Configurable timeout and debouncing
+- Support for custom tsqllint paths and config files
+- Character and line range modes for diagnostics
 
-Initial release of ...
+## Contributing
 
-### 1.0.1
+Issues and pull requests are welcome! Please report issues at [GitHub repository](https://github.com/yourusername/tsqllint-vscode-lite).
 
-Fixed issue #.
+## License
 
-### 1.1.0
-
-Added features X, Y, and Z.
+See [LICENSE](LICENSE) file for details.
 
 ---
 
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+**Enjoy linting your T-SQL code!**
