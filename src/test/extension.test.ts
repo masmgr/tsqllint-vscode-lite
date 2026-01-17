@@ -190,7 +190,14 @@ process.stdout.write(\`\${filePath}(1,1): warning TypeRule : Typed issue.\`);
 	});
 
 	test.skip("rename clears diagnostics for old URI", async function () {
-		// Skipped: vscode.workspace.fs.rename() does not reliably trigger onDidRenameFiles in test environment
+		// Skipped: vscode.workspace.fs.rename() does not reliably trigger onDidRenameFiles in test environment.
+		// This E2E test is unstable due to VS Code test environment limitations:
+		// - File watcher events may not fire consistently in temporary workspaces
+		// - Race conditions between file operations and event handlers
+		// - CI/Windows environment variability
+		//
+		// Alternative: The core logic is tested in unit tests (src/test/handlers.test.ts)
+		// which directly test handleDidRenameFiles() without depending on file system events.
 		this.timeout(20000);
 		await activateExtension();
 
@@ -257,7 +264,14 @@ process.stdout.write(\`\${filePath}(1,1): error RenameRule : Rename issue.\`);
 	});
 
 	test.skip("delete clears diagnostics for old URI", async function () {
-		// Skipped: vscode.workspace.fs.delete() does not reliably trigger onDidDeleteFiles in test environment
+		// Skipped: vscode.workspace.fs.delete() does not reliably trigger onDidDeleteFiles in test environment.
+		// This E2E test is unstable due to VS Code test environment limitations:
+		// - File watcher events may not fire consistently in temporary workspaces
+		// - Race conditions between file operations and event handlers
+		// - CI/Windows environment variability
+		//
+		// Alternative: The core logic is tested in unit tests (src/test/handlers.test.ts)
+		// which directly test handleDidDeleteFiles() without depending on file system events.
 		this.timeout(20000);
 		await activateExtension();
 

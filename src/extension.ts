@@ -2,6 +2,7 @@
 // Import the module and reference it with the alias vscode in your code below
 import * as vscode from "vscode";
 import { createLanguageClient } from "./client/client";
+import { handleDidDeleteFiles, handleDidRenameFiles } from "./client/handlers";
 import type { LanguageClient } from "vscode-languageclient/node";
 
 let client: LanguageClient | undefined;
@@ -41,24 +42,10 @@ export function activate(context: vscode.ExtensionContext): TsqllintLiteApi {
 
 	context.subscriptions.push(
 		vscode.workspace.onDidDeleteFiles(async (event) => {
-			if (!client) {
-				return;
-			}
-			if (clientReady) {
-				await clientReady;
-			}
-			const uris = event.files.map((file) => file.toString());
-			client.sendNotification("tsqllint/clearDiagnostics", { uris });
+			await handleDidDeleteFiles(event, client, clientReady);
 		}),
 		vscode.workspace.onDidRenameFiles(async (event) => {
-			if (!client) {
-				return;
-			}
-			if (clientReady) {
-				await clientReady;
-			}
-			const uris = event.files.map((file) => file.oldUri.toString());
-			client.sendNotification("tsqllint/clearDiagnostics", { uris });
+			await handleDidRenameFiles(event, client, clientReady);
 		}),
 	);
 
