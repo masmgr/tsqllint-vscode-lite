@@ -11,8 +11,9 @@ This is `tsqllint-lite`, a VS Code extension that integrates TSQLLint (a T-SQL l
 ### Development
 ```bash
 npm install              # Install dependencies
-npm run build            # Compile TypeScript to out/
-npm run watch            # Watch mode for development
+npm run build            # Bundle extension/server to dist/ with esbuild
+npm run compile          # Compile TypeScript to out/ (for tests)
+npm run watch            # Watch mode for development (esbuild)
 npm run typecheck        # Type-check without emitting
 ```
 
@@ -24,9 +25,11 @@ npm run format           # Format with Biome
 
 ### Testing
 ```bash
-npm test                 # Run unit tests (out/test/**/*.test.js)
-npm run test:e2e         # Run E2E tests (out/e2e/**/*.e2e.test.js)
+npm test                 # Run unit tests (builds to dist/ + compiles tests to out/)
+npm run test:e2e         # Run E2E tests (builds to dist/ + compiles tests to out/)
 ```
+
+**Build Process for Tests**: The test scripts run both `npm run build` (to bundle extension code to `dist/`) and `npm run compile` (to compile test files to `out/`). This is necessary because VS Code loads the extension from `dist/extension.js` while the test runner executes tests from `out/test/**/*.test.js`.
 
 The test runner uses `@vscode/test-cli` with a fixture workspace at [test/fixtures/workspace/](test/fixtures/workspace/).
 
