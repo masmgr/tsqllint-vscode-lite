@@ -12,8 +12,10 @@
 	"engines": {
 		"vscode": "^1.108.1"
 	},
-	"categories": ["Other"],
-	"main": "./out/extension.js",
+	"categories": [
+		"Other"
+	],
+	"main": "./dist/extension.js",
 	"contributes": {
 		"commands": [
 			{
@@ -57,7 +59,10 @@
 				},
 				"tsqllint.rangeMode": {
 					"type": "string",
-					"enum": ["character", "line"],
+					"enum": [
+						"character",
+						"line"
+					],
 					"default": "character",
 					"description": "Diagnostic range mode for reported issues."
 				}
@@ -66,24 +71,27 @@
 	},
 	"scripts": {
 		"typecheck": "tsc -p tsconfig.json --noEmit",
-		"build": "tsc -p tsconfig.json",
-		"vscode:prepublish": "npm run build",
+		"compile": "tsc -p tsconfig.json",
+		"build": "node esbuild.mjs",
+		"watch": "node esbuild.mjs --watch",
+		"watch:tsc": "tsc -watch -p tsconfig.json",
+		"vscode:prepublish": "npm run build -- --production",
 		"package": "vsce package",
 		"lint": "biome lint .",
 		"format": "biome format --write .",
-		"test": "vscode-test",
-		"test:e2e": "vscode-test --config .vscode-test.e2e.mjs",
-		"watch": "tsc -watch -p tsconfig.json"
+		"test": "npm run compile && vscode-test",
+		"test:e2e": "npm run compile && vscode-test --config .vscode-test.e2e.mjs"
 	},
 	"devDependencies": {
-		"@types/vscode": "^1.108.1",
+		"@biomejs/biome": "^1.9.4",
 		"@types/mocha": "^10.0.10",
 		"@types/node": "22.x",
-		"@biomejs/biome": "^1.9.4",
-		"typescript": "^5.9.3",
+		"@types/vscode": "^1.108.1",
 		"@vscode/test-cli": "^0.0.12",
 		"@vscode/test-electron": "^2.5.2",
-		"@vscode/vsce": "^3.2.1"
+		"@vscode/vsce": "^3.2.1",
+		"esbuild": "^0.27.2",
+		"typescript": "^5.9.3"
 	},
 	"dependencies": {
 		"vscode-languageclient": "^9.0.1",

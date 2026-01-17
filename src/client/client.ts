@@ -11,7 +11,7 @@ export function createLanguageClient(
 	context: vscode.ExtensionContext,
 ): LanguageClient {
 	const serverModule = context.asAbsolutePath(
-		path.join("out", "server", "server.js"),
+		path.join("dist", "server.js"),
 	);
 
 	const serverOptions: ServerOptions = {
