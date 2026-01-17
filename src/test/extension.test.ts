@@ -393,6 +393,20 @@ async function restoreConfig(
 			vscode.ConfigurationTarget.Workspace,
 		);
 	}
+	// Clean up workspace settings file if it's empty or no longer needed
+	const workspaceRoot = vscode.workspace.workspaceFolders?.[0];
+	if (workspaceRoot) {
+		const settingsPath = vscode.Uri.joinPath(
+			workspaceRoot.uri,
+			".vscode",
+			"settings.json",
+		);
+		try {
+			await vscode.workspace.fs.delete(settingsPath, { recursive: false });
+		} catch {
+			// Ignore errors if file doesn't exist
+		}
+	}
 }
 
 async function activateExtension(): Promise<void> {
