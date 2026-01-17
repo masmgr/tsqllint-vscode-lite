@@ -3,6 +3,7 @@ import * as path from "node:path";
 import { spawn } from "node:child_process";
 import type { TsqllintSettings } from "../config/settings";
 import type { LintRunResult } from "./types";
+import { decodeCliOutput } from "./decodeOutput";
 
 export type RunTsqllintOptions = {
 	filePath: string;
@@ -32,8 +33,8 @@ export async function runTsqllint(
 		let settled = false;
 		let timedOut = false;
 		let cancelled = false;
-		let stdout = "";
-		let stderr = "";
+		const stdoutChunks: Buffer[] = [];
+		const stderrChunks: Buffer[] = [];
 		let timer: NodeJS.Timeout | null = null;
 
 		const child = spawn(spawnSpec.command, spawnSpec.args, {
@@ -65,9 +66,19 @@ export async function runTsqllint(
 			reject(error);
 		};
 
+		const decodeBuffers = (): { stdout: string; stderr: string } => {
+			const stdoutBuffer = Buffer.concat(stdoutChunks);
+			const stderrBuffer = Buffer.concat(stderrChunks);
+			return {
+				stdout: decodeCliOutput(stdoutBuffer),
+				stderr: decodeCliOutput(stderrBuffer),
+			};
+		};
+
 		timer = setTimeout(() => {
 			timedOut = true;
 			child.kill();
+			const { stdout, stderr } = decodeBuffers();
 			finish({
 				stdout,
 				stderr,
@@ -82,6 +93,7 @@ export async function runTsqllint(
 			() => {
 				cancelled = true;
 				child.kill();
+				const { stdout, stderr } = decodeBuffers();
 				finish({
 					stdout,
 					stderr,
@@ -93,13 +105,11 @@ export async function runTsqllint(
 			{ once: true },
 		);
 
-		child.stdout.setEncoding("utf8");
-		child.stdout.on("data", (data: string) => {
-			stdout += data;
+		child.stdout.on("data", (data: Buffer) => {
+			stdoutChunks.push(data);
 		});
-		child.stderr.setEncoding("utf8");
-		child.stderr.on("data", (data: string) => {
-			stderr += data;
+		child.stderr.on("data", (data: Buffer) => {
+			stderrChunks.push(data);
 		});
 
 		child.on("error", (error) => {
@@ -107,6 +117,7 @@ export async function runTsqllint(
 		});
 
 		child.on("close", (exitCode) => {
+			const { stdout, stderr } = decodeBuffers();
 			finish({
 				stdout,
 				stderr,

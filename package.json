@@ -17,10 +17,7 @@
 	"engines": {
 		"vscode": "^1.108.1"
 	},
-	"categories": [
-		"Linters",
-		"Programming Languages"
-	],
+	"categories": ["Linters", "Programming Languages"],
 	"keywords": [
 		"tsqllint",
 		"t-sql",
@@ -33,9 +30,7 @@
 		"database",
 		"lint"
 	],
-	"activationEvents": [
-		"onLanguage:sql"
-	],
+	"activationEvents": ["onLanguage:sql"],
 	"main": "./dist/extension.js",
 	"contributes": {
 		"commands": [
@@ -80,10 +75,7 @@
 				},
 				"tsqllint.rangeMode": {
 					"type": "string",
-					"enum": [
-						"character",
-						"line"
-					],
+					"enum": ["character", "line"],
 					"default": "character",
 					"description": "Diagnostic range mode for reported issues."
 				}
@@ -115,6 +107,8 @@
 		"typescript": "^5.9.3"
 	},
 	"dependencies": {
+		"chardet": "^2.1.1",
+		"iconv-lite": "^0.7.2",
 		"vscode-languageclient": "^9.0.1",
 		"vscode-languageserver": "^9.0.1",
 		"vscode-languageserver-textdocument": "^1.0.11",

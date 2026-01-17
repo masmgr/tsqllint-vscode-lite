@@ -10,9 +10,7 @@ import {
 export function createLanguageClient(
 	context: vscode.ExtensionContext,
 ): LanguageClient {
-	const serverModule = context.asAbsolutePath(
-		path.join("dist", "server.js"),
-	);
+	const serverModule = context.asAbsolutePath(path.join("dist", "server.js"));
 
 	const serverOptions: ServerOptions = {
 		run: { module: serverModule, transport: TransportKind.ipc },
