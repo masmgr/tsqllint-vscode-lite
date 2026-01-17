@@ -13,6 +13,7 @@
 		"url": "https://github.com/masmgr/tsqllint-vscode-lite/issues"
 	},
 	"homepage": "https://github.com/masmgr/tsqllint-vscode-lite#readme",
+	"icon": "icon.png",
 	"engines": {
 		"vscode": "^1.108.1"
 	},
