@@ -3,6 +3,73 @@ import { URI } from "vscode-uri";
 import { handleDidDeleteFiles, handleDidRenameFiles } from "../client/handlers";
 import type { LanguageClient } from "vscode-languageclient/node";
 
+/**
+ * Notification tracking type for mock client.
+ */
+interface NotificationRecord {
+	method: string;
+	params: unknown;
+}
+
+/**
+ * Mock LanguageClient with notification tracking.
+ */
+interface MockLanguageClient extends LanguageClient {
+	__notifications: NotificationRecord[];
+}
+
+/**
+ * Creates a mock LanguageClient for testing with notification tracking.
+ *
+ * @returns Mock LanguageClient that tracks all sendNotification calls
+ */
+function createMockLanguageClient(): MockLanguageClient {
+	const notifications: NotificationRecord[] = [];
+
+	const mockClient = {
+		sendNotification(method: string, params: unknown) {
+			notifications.push({ method, params });
+		},
+		__notifications: notifications,
+	} as MockLanguageClient;
+
+	return mockClient;
+}
+
+/**
+ * Creates a mock LanguageClient with custom sendNotification behavior.
+ *
+ * @param customSendNotification - Custom implementation for sendNotification
+ * @returns Mock LanguageClient with custom behavior
+ */
+function createMockLanguageClientWithBehavior(
+	customSendNotification: (method: string, params: unknown) => void,
+): MockLanguageClient {
+	const notifications: NotificationRecord[] = [];
+
+	const mockClient = {
+		sendNotification(method: string, params: unknown) {
+			customSendNotification(method, params);
+			notifications.push({ method, params });
+		},
+		__notifications: notifications,
+	} as MockLanguageClient;
+
+	return mockClient;
+}
+
+/**
+ * Gets notifications sent to mock client.
+ *
+ * @param client - Mock LanguageClient instance
+ * @returns Array of notifications sent to the client
+ */
+function getMockNotifications(
+	client: MockLanguageClient,
+): NotificationRecord[] {
+	return client.__notifications;
+}
+
 suite("handlers", () => {
 	suite("handleDidDeleteFiles", () => {
 		test("sends clearDiagnostics notification with deleted URIs", async () => {
@@ -10,16 +77,8 @@ suite("handlers", () => {
 				URI.file("/path/to/file1.sql"),
 				URI.file("/path/to/file2.sql"),
 			];
-			const notifications: Array<{
-				method: string;
-				params: unknown;
-			}> = [];
 
-			const mockClient = {
-				sendNotification(method: string, params: unknown) {
-					notifications.push({ method, params });
-				},
-			} as unknown as LanguageClient;
+			const mockClient = createMockLanguageClient();
 
 			const event = {
 				files: deletedUris,
@@ -27,6 +86,7 @@ suite("handlers", () => {
 
 			await handleDidDeleteFiles(event, mockClient, Promise.resolve());
 
+			const notifications = getMockNotifications(mockClient);
 			assert.strictEqual(notifications.length, 1);
 			assert.strictEqual(notifications[0]?.method, "tsqllint/clearDiagnostics");
 			assert.deepStrictEqual(notifications[0]?.params, {
@@ -52,20 +112,14 @@ suite("handlers", () => {
 				}, 10);
 			});
 
-			const notifications: Array<{
-				method: string;
-				params: unknown;
-			}> = [];
-
-			const mockClient = {
-				sendNotification(method: string, params: unknown) {
+			const mockClient = createMockLanguageClientWithBehavior(
+				(method: string, params: unknown) => {
 					assert.ok(
 						readyResolved,
 						"Client should be ready before sending notification",
 					);
-					notifications.push({ method, params });
 				},
-			} as unknown as LanguageClient;
+			);
 
 			const event = {
 				files: [URI.file("/path/to/file.sql")],
@@ -73,6 +127,7 @@ suite("handlers", () => {
 
 			await handleDidDeleteFiles(event, mockClient, clientReady);
 
+			const notifications = getMockNotifications(mockClient);
 			assert.strictEqual(notifications.length, 1);
 		});
 	});
@@ -87,16 +142,8 @@ suite("handlers", () => {
 				URI.file("/path/to/new1.sql"),
 				URI.file("/path/to/new2.sql"),
 			];
-			const notifications: Array<{
-				method: string;
-				params: unknown;
-			}> = [];
 
-			const mockClient = {
-				sendNotification(method: string, params: unknown) {
-					notifications.push({ method, params });
-				},
-			} as unknown as LanguageClient;
+			const mockClient = createMockLanguageClient();
 
 			const event = {
 				files: oldUris.map((oldUri, i) => ({
@@ -107,6 +154,7 @@ suite("handlers", () => {
 
 			await handleDidRenameFiles(event, mockClient, Promise.resolve());
 
+			const notifications = getMockNotifications(mockClient);
 			assert.strictEqual(notifications.length, 1);
 			assert.strictEqual(notifications[0]?.method, "tsqllint/clearDiagnostics");
 			assert.deepStrictEqual(notifications[0]?.params, {
@@ -137,20 +185,12 @@ suite("handlers", () => {
 				}, 10);
 			});
 
-			const notifications: Array<{
-				method: string;
-				params: unknown;
-			}> = [];
-
-			const mockClient = {
-				sendNotification(method: string, params: unknown) {
-					assert.ok(
-						readyResolved,
-						"Client should be ready before sending notification",
-					);
-					notifications.push({ method, params });
-				},
-			} as unknown as LanguageClient;
+			const mockClient = createMockLanguageClientWithBehavior(() => {
+				assert.ok(
+					readyResolved,
+					"Client should be ready before sending notification",
+				);
+			});
 
 			const event = {
 				files: [
@@ -163,6 +203,7 @@ suite("handlers", () => {
 
 			await handleDidRenameFiles(event, mockClient, clientReady);
 
+			const notifications = getMockNotifications(mockClient);
 			assert.strictEqual(notifications.length, 1);
 		});
 	});

@@ -1,39 +1,39 @@
+/**
+ * Fake CLI helper for creating mock tsqllint executables in tests.
+ * Creates temporary executables that run custom JavaScript code.
+ */
+
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
+import { rmWithRetry } from "./cleanup";
 
+/**
+ * Fake CLI instance with cleanup method.
+ */
 export type FakeCli = {
+	/** Path to the fake CLI executable */
 	commandPath: string;
+	/** Cleanup function to remove temporary files */
 	cleanup: () => Promise<void>;
 };
 
-export async function rmWithRetry(
-	target: string,
-	maxRetries = 30,
-	delayMs = 100,
-): Promise<void> {
-	for (let i = 0; i < maxRetries; i++) {
-		try {
-			await fs.rm(target, { recursive: true, force: true });
-			return;
-		} catch (error) {
-			const isRetriable =
-				error &&
-				typeof error === "object" &&
-				"code" in error &&
-				(error.code === "EBUSY" ||
-					error.code === "EPERM" ||
-					error.code === "ENOTEMPTY");
-
-			if (isRetriable && i < maxRetries - 1) {
-				await new Promise((r) => setTimeout(r, delayMs));
-				continue;
-			}
-			throw error;
-		}
-	}
-}
-
+/**
+ * Creates a fake tsqllint CLI executable for testing.
+ * The fake CLI runs custom JavaScript code instead of real linting.
+ *
+ * @param scriptBody - JavaScript code to execute when CLI is invoked
+ * @returns FakeCli instance with commandPath and cleanup method
+ *
+ * @example
+ * const cli = await createFakeCli(`
+ *   const args = process.argv.slice(2);
+ *   const filePath = args[args.length - 1] || "";
+ *   process.stdout.write(\`\${filePath}(1,1): error Rule : Message.\`);
+ * `);
+ * // Use cli.commandPath in tests
+ * await cli.cleanup(); // Clean up when done
+ */
 export async function createFakeCli(scriptBody: string): Promise<FakeCli> {
 	const dir = await fs.mkdtemp(path.join(os.tmpdir(), "tsqllint-fake-"));
 	const scriptPath = path.join(dir, "fake-tsqllint.js");
@@ -56,7 +56,7 @@ export async function createFakeCli(scriptBody: string): Promise<FakeCli> {
 	return {
 		commandPath,
 		cleanup: async () => {
-			await rmWithRetry(dir);
+			await rmWithRetry(dir, { throwOnFailure: true });
 		},
 	};
 }

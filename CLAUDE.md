@@ -121,6 +121,71 @@ Tests are organized into three categories:
 
 Use the fake CLI helper ([src/test/helpers/fakeCli.ts](src/test/helpers/fakeCli.ts)) for mocking tsqllint in tests.
 
+## Testing Architecture
+
+### Test Organization
+
+Tests are organized into unit tests and E2E tests:
+
+1. **Unit Tests**: Test individual functions in isolation
+   - [parseOutput.test.ts](src/test/parseOutput.test.ts) - Output parser tests
+   - [runTsqllint.test.ts](src/test/runTsqllint.test.ts) - CLI runner tests
+   - [handlers.test.ts](src/test/handlers.test.ts) - File event handler tests
+
+2. **E2E Tests**: Test full integration with VS Code
+   - [extension.test.ts](src/test/extension.test.ts) - Extension activation and commands
+
+3. **Test Helpers** ([src/test/helpers/](src/test/helpers/)):
+   - `testConstants.ts` - Centralized test timeouts, delays, and constants
+   - `cleanup.ts` - File system cleanup utilities with retry logic
+   - `testFixtures.ts` - Reusable test data factories (fakeCli, workspaces, configs)
+   - `e2eTestHarness.ts` - E2E test setup/teardown automation
+   - `fakeCli.ts` - Mock tsqllint CLI helper
+
+### Writing E2E Tests
+
+Use the test harness for all E2E tests:
+
+```typescript
+import { runE2ETest } from './helpers/e2eTestHarness';
+import { TEST_TIMEOUTS, FAKE_CLI_RULES } from './helpers/testConstants';
+
+test("my test", async function () {
+  this.timeout(TEST_TIMEOUTS.MOCHA_TEST);
+
+  await runE2ETest(
+    {
+      fakeCliRule: FAKE_CLI_RULES.MY_RULE,
+      config: { runOnSave: true },
+      documentContent: 'select 1;',
+    },
+    async (context, harness) => {
+      // Test implementation
+      const diagnostics = await harness.waitForDiagnostics(
+        context.document.uri,
+        (entries) => entries.length >= 1
+      );
+      // Assertions...
+    }
+  );
+});
+```
+
+### Test Constants
+
+All timeouts, delays, and retry values are centralized in `testConstants.ts`:
+- Use `TEST_TIMEOUTS.*` for timeout values
+- Use `TEST_DELAYS.*` for sleep/delay values
+- Use `RETRY_CONFIG.*` for retry attempts and delays
+- Use `FAKE_CLI_RULES.*` for consistent rule names
+
+### Best Practices
+
+1. **Always use constants**: Never hardcode timeouts or delays
+2. **Always use harness**: New E2E tests must use `runE2ETest()`
+3. **Always use factories**: Don't create inline fakeCli scripts
+4. **Document in CLAUDE.md**: Keep test architecture section updated
+
 ## Important Implementation Notes
 
 ### Windows Compatibility

@@ -4,7 +4,8 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { defaultSettings } from "../server/config/settings";
 import { runTsqllint } from "../server/lint/runTsqllint";
-import { createFakeCli, rmWithRetry } from "./helpers/fakeCli";
+import { createFakeCli } from "./helpers/fakeCli";
+import { rmWithRetry } from "./helpers/cleanup";
 
 suite("runTsqllint", () => {
 	test("runs configured executable and captures output", async () => {
