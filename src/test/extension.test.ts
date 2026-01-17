@@ -5,6 +5,10 @@ import * as vscode from "vscode";
 import { createFakeCli } from "./helpers/fakeCli";
 
 suite("Extension Test Suite", () => {
+	suiteTeardown(async () => {
+		await cleanupWorkspace();
+	});
+
 	test("updates diagnostics after lint run", async function () {
 		this.timeout(20000);
 
@@ -428,6 +432,18 @@ async function removeDir(dirPath: string): Promise<void> {
 		maxRetries: 30,
 		retryDelay: 100,
 	});
+}
+
+async function cleanupWorkspace(): Promise<void> {
+	const workspaceRoot = vscode.workspace.workspaceFolders?.[0];
+	if (workspaceRoot) {
+		const vscodeDir = vscode.Uri.joinPath(workspaceRoot.uri, ".vscode");
+		try {
+			await vscode.workspace.fs.delete(vscodeDir, { recursive: true });
+		} catch {
+			// Ignore errors if directory doesn't exist
+		}
+	}
 }
 
 async function sleep(ms: number): Promise<void> {
