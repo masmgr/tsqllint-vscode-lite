@@ -276,7 +276,6 @@ async function runLintNow(uri: string, reason: LintReason): Promise<number> {
 		uri,
 		cwd,
 		lines: document.getText().split(/\r?\n/),
-		rangeMode: documentSettings.rangeMode,
 		...(tempInfo ? { targetPaths: [tempInfo.filePath] } : {}),
 	});
 
