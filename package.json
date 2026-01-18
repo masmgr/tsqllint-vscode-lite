@@ -17,7 +17,10 @@
 	"engines": {
 		"vscode": "^1.108.1"
 	},
-	"categories": ["Linters", "Programming Languages"],
+	"categories": [
+		"Linters",
+		"Programming Languages"
+	],
 	"keywords": [
 		"tsqllint",
 		"t-sql",
@@ -30,7 +33,9 @@
 		"database",
 		"lint"
 	],
-	"activationEvents": ["onLanguage:sql"],
+	"activationEvents": [
+		"onLanguage:sql"
+	],
 	"main": "./dist/extension.js",
 	"contributes": {
 		"commands": [
@@ -116,7 +121,10 @@
 		"typescript": "^5.9.3"
 	},
 	"lint-staged": {
-		"*.ts": ["biome format --write", "biome lint --fix"],
+		"*.ts": [
+			"biome format --write",
+			"biome lint --fix"
+		],
 		"*.json": "biome format --write"
 	},
 	"dependencies": {
