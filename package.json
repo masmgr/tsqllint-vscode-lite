@@ -77,12 +77,6 @@
 					"type": "number",
 					"default": 10000,
 					"description": "Timeout in milliseconds for lint execution."
-				},
-				"tsqllint.rangeMode": {
-					"type": "string",
-					"enum": ["character", "line"],
-					"default": "character",
-					"description": "Diagnostic range mode for reported issues."
 				}
 			}
 		}

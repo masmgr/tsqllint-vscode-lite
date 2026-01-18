@@ -13,7 +13,6 @@ type ParseOutputOptions = {
 	uri: string;
 	cwd: string | null;
 	lines: string[];
-	rangeMode?: "character" | "line";
 	targetPaths?: string[];
 };
 
@@ -46,7 +45,6 @@ export function parseOutput(options: ParseOutputOptions): Diagnostic[] {
 		),
 	);
 	const cwd = options.cwd ?? path.dirname(targetPath);
-	const rangeMode = options.rangeMode ?? "character";
 
 	for (const line of options.stdout.split(/\r?\n/)) {
 		if (!line.trim()) {
@@ -94,25 +92,11 @@ export function parseOutput(options: ParseOutputOptions): Diagnostic[] {
 		}
 
 		const lineNumber = Math.max(0, Number(rawLine) - 1);
-		const rawColumn = Number(rawCol);
-		const column = rawColumn <= 0 ? 0 : rawColumn - 1;
 		const lineText = options.lines[lineNumber] ?? "";
 		const lineLength = lineText.length;
 
-		const exceedsLine = column >= lineLength;
-		const start =
-			rangeMode === "line" || exceedsLine
-				? { line: lineNumber, character: 0 }
-				: { line: lineNumber, character: column };
-		let end: { line: number; character: number };
-		if (rangeMode === "line" || exceedsLine) {
-			end = { line: lineNumber, character: lineLength };
-		} else {
-			end =
-				column >= lineLength
-					? { line: lineNumber, character: lineLength }
-					: { line: lineNumber, character: column + 1 };
-		}
+		const start = { line: lineNumber, character: 0 };
+		const end = { line: lineNumber, character: lineLength };
 
 		diagnostics.push({
 			message: rawMessage,

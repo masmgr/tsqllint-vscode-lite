@@ -86,14 +86,6 @@ This extension contributes the following settings under the `tsqllint` namespace
 - **Default**: `10000` (10 seconds)
 - **Description**: Timeout in milliseconds for lint execution. If tsqllint takes longer than this, the process will be killed.
 
-### `tsqllint.rangeMode`
-- **Type**: `string`
-- **Enum**: `"character"` | `"line"`
-- **Default**: `"character"`
-- **Description**: Diagnostic range mode for reported issues.
-  - `"character"`: Highlights only the specific character where the issue occurs
-  - `"line"`: Highlights the entire line
-
 ## Configuration Examples
 
 ### Basic Configuration (`.vscode/settings.json`)
@@ -114,8 +106,7 @@ This extension contributes the following settings under the `tsqllint` namespace
   "tsqllint.runOnSave": true,
   "tsqllint.runOnType": true,
   "tsqllint.debounceMs": 1000,
-  "tsqllint.timeoutMs": 15000,
-  "tsqllint.rangeMode": "line"
+  "tsqllint.timeoutMs": 15000
 }
 ```
 
@@ -124,8 +115,7 @@ This extension contributes the following settings under the `tsqllint` namespace
 ```json
 {
   "tsqllint.runOnType": true,
-  "tsqllint.debounceMs": 500,
-  "tsqllint.rangeMode": "character"
+  "tsqllint.debounceMs": 500
 }
 ```
 
@@ -193,17 +183,6 @@ This extension uses the **Language Server Protocol (LSP)** architecture:
    ```
 3. Use manual lint commands instead of automatic linting
 
-### Diagnostics show entire line instead of specific character
-
-**Cause**: `rangeMode` is set to `"line"`.
-
-**Solution**: Change to character mode:
-```json
-{
-  "tsqllint.rangeMode": "character"
-}
-```
-
 ### Path issues on Windows
 
 **Cause**: Windows paths require proper escaping in JSON.
@@ -246,7 +225,7 @@ Initial release of tsqllint-lite:
 - Manual lint commands
 - Configurable timeout and debouncing
 - Support for custom tsqllint paths and config files
-- Character and line range modes for diagnostics
+- Full-line diagnostic highlighting
 
 ## Contributing
 

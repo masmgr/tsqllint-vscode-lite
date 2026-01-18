@@ -80,9 +80,7 @@ Executes the tsqllint CLI with proper process management:
 
 Parses tsqllint output into VS Code diagnostics:
 - **Pattern**: `<file>(<line>,<col>): <severity> <rule> : <message>`
-- **Range modes**:
-  - `"character"`: Highlights single character at error position
-  - `"line"`: Highlights entire line
+- **Range mode**: Always highlights entire line (fixed to "line" mode)
 - **Path normalization**: Handles Windows case-insensitivity and path resolution
 - **Temporary file support**: Maps temp file paths back to original URIs
 
@@ -114,7 +112,6 @@ The extension contributes these settings (namespace: `tsqllint`):
 - `runOnOpen`: Auto-lint on open (default: true)
 - `debounceMs`: Debounce delay for typing (default: 500)
 - `timeoutMs`: Process timeout (default: 10000)
-- `rangeMode`: Diagnostic range mode - "character" or "line" (default: "character")
 
 ## Testing Strategy
 

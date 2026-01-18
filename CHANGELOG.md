@@ -21,8 +21,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/), and this 
   - Debouncing for typing events (configurable via `tsqllint.debounceMs`)
   - Document version tracking to ensure accuracy
 - **Customizable diagnostic display**:
-  - Character-level highlighting (default)
-  - Full-line highlighting option (`tsqllint.rangeMode`)
+  - Full-line highlighting for all diagnostics
 - **Flexible configuration options**:
   - Custom TSQLLint executable path (`tsqllint.path`)
   - Custom TSQLLint config file path (`tsqllint.configPath`)
