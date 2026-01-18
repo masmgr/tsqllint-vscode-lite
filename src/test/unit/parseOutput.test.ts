@@ -205,11 +205,11 @@ suite("parseOutput", () => {
 			assert.strictEqual(diagnostics[0]?.message, "エラーメッセージ");
 		});
 
-		test("handles Windows path separators", () => {
-			const cwd = "C:\\workspace";
-			const filePath = "C:\\workspace\\query.sql";
+		test("handles path separators", () => {
+			const cwd = path.resolve("workspace");
+			const filePath = path.join(cwd, "query.sql");
 			const uri = URI.file(filePath).toString();
-			const stdout = "C:\\workspace\\query.sql(1,1): error Rule : Message";
+			const stdout = `${filePath}(1,1): error Rule : Message`;
 			const lines = ["select 1;"];
 
 			const diagnostics = parseOutput({ stdout, uri, cwd, lines });
