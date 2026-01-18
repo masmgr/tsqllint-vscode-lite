@@ -143,3 +143,7 @@ vite.config.ts.timestamp-*
 nul
 
 *.vsix
+
+test/fixtures/workspace/.vscode
+test/fixtures/workspace/tsqllint-*
+test/fixtures/workspace/*.sql
