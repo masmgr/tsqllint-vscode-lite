@@ -25,13 +25,18 @@ npm run format           # Format with Biome
 
 ### Testing
 ```bash
-npm test                 # Run unit tests (builds to dist/ + compiles tests to out/)
-npm run test:e2e         # Run E2E tests (builds to dist/ + compiles tests to out/)
+npm run test:unit        # Run unit tests with Mocha
+npm run test:e2e         # Run E2E tests with VS Code Test
+npm test                 # Run all tests (unit + E2E)
 ```
 
-**Build Process for Tests**: The test scripts run both `npm run build` (to bundle extension code to `dist/`) and `npm run compile` (to compile test files to `out/`). This is necessary because VS Code loads the extension from `dist/extension.js` while the test runner executes tests from `out/test/**/*.test.js`.
+**Build Process for Tests**:
+- **Unit tests**: Use `npm run compile:test` to compile test files to `out/`, then run with Mocha
+- **E2E tests**: Use `npm run build` (bundles to `dist/`) + `npm run compile:test` (compiles tests to `out/`), then run with VS Code Test
 
-The test runner uses `@vscode/test-cli` with a fixture workspace at [test/fixtures/workspace/](test/fixtures/workspace/).
+The VS Code extension is loaded from `dist/extension.js` while test files run from `out/test/**/*.test.js`.
+
+The E2E test runner uses `@vscode/test-cli` with configuration in [.vscode-test.mjs](.vscode-test.mjs) and a fixture workspace at [test/fixtures/workspace/](test/fixtures/workspace/).
 
 ## Architecture
 
@@ -115,34 +120,45 @@ The extension contributes these settings (namespace: `tsqllint`):
 
 ## Testing Strategy
 
-Tests are organized into three categories:
+Tests are organized into two categories under [src/test/](src/test/):
 
-1. **Unit tests** ([src/test/](src/test/)): Test individual functions like `parseOutput()` and `runTsqllint()`
-2. **Extension tests** ([src/test/extension.test.ts](src/test/extension.test.ts)): Test extension activation and commands
-3. **E2E tests** ([src/e2e/](src/e2e/)): Test full integration with tsqllint CLI
+1. **Unit tests** ([src/test/unit/](src/test/unit/)): Test individual functions in isolation
+   - [parseOutput.test.ts](src/test/unit/parseOutput.test.ts) - Output parser tests
+   - [runTsqllint.test.ts](src/test/unit/runTsqllint.test.ts) - CLI runner tests
+   - [handlers.test.ts](src/test/unit/handlers.test.ts) - File event handler tests
 
-Use the fake CLI helper ([src/test/helpers/fakeCli.ts](src/test/helpers/fakeCli.ts)) for mocking tsqllint in tests.
+2. **E2E tests** ([src/test/e2e/](src/test/e2e/)): Test full integration with VS Code
+   - [extension.test.ts](src/test/e2e/extension.test.ts) - Extension activation and commands
+   - [localTsqllint.test.ts](src/test/e2e/localTsqllint.test.ts) - Real tsqllint CLI integration
+
+3. **Test helpers** ([src/test/helpers/](src/test/helpers/)): Shared utilities
+   - `fakeCli.ts` - Mock tsqllint CLI helper
+   - `testFixtures.ts` - Reusable test data factories
+   - `e2eTestHarness.ts` - E2E test setup/teardown automation
+   - `testConstants.ts` - Centralized timeouts and constants
+   - `cleanup.ts` - File system cleanup utilities
 
 ## Testing Architecture
 
 ### Test Organization
 
-Tests are organized into unit tests and E2E tests:
+All tests are located under [src/test/](src/test/) with clear separation:
 
-1. **Unit Tests**: Test individual functions in isolation
-   - [parseOutput.test.ts](src/test/parseOutput.test.ts) - Output parser tests
-   - [runTsqllint.test.ts](src/test/runTsqllint.test.ts) - CLI runner tests
-   - [handlers.test.ts](src/test/handlers.test.ts) - File event handler tests
+**Directory Structure:**
+```
+src/test/
+├── unit/          # Unit tests (run with Mocha)
+├── e2e/           # E2E tests (run with VS Code Test)
+└── helpers/       # Shared test utilities
+```
 
-2. **E2E Tests**: Test full integration with VS Code
-   - [extension.test.ts](src/test/extension.test.ts) - Extension activation and commands
+**Test Execution:**
+- **Unit tests**: Run directly with Mocha (no VS Code instance needed)
+- **E2E tests**: Run in a VS Code instance with the extension loaded
 
-3. **Test Helpers** ([src/test/helpers/](src/test/helpers/)):
-   - `testConstants.ts` - Centralized test timeouts, delays, and constants
-   - `cleanup.ts` - File system cleanup utilities with retry logic
-   - `testFixtures.ts` - Reusable test data factories (fakeCli, workspaces, configs)
-   - `e2eTestHarness.ts` - E2E test setup/teardown automation
-   - `fakeCli.ts` - Mock tsqllint CLI helper
+**Configuration Files:**
+- [.mocharc.unit.json](.mocharc.unit.json) - Mocha configuration for unit tests
+- [.vscode-test.mjs](.vscode-test.mjs) - VS Code Test configuration for E2E tests
 
 ### Writing E2E Tests
 

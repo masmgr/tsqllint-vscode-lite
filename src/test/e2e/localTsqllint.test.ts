@@ -4,9 +4,9 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { spawn } from "node:child_process";
 import { URI } from "vscode-uri";
-import { defaultSettings } from "../server/config/settings";
-import { parseOutput } from "../server/lint/parseOutput";
-import { runTsqllint } from "../server/lint/runTsqllint";
+import { defaultSettings } from "../../server/config/settings";
+import { parseOutput } from "../../server/lint/parseOutput";
+import { runTsqllint } from "../../server/lint/runTsqllint";
 
 suite("E2E (local): real tsqllint binary", () => {
 	test("runs tsqllint and parses diagnostics", async function () {
@@ -56,7 +56,7 @@ suite("E2E (local): real tsqllint binary", () => {
 				`Expected diagnostics, got stdout=${JSON.stringify(result.stdout)}`,
 			);
 			assert.ok(
-				diagnostics.some((diag) => diag.source === "tsqllint"),
+				diagnostics.some((diag: { source?: string }) => diag.source === "tsqllint"),
 				"Expected tsqllint as Diagnostic.source",
 			);
 		} finally {
