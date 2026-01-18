@@ -11,7 +11,7 @@ A lightweight Visual Studio Code extension that integrates [TSQLLint](https://gi
 - **Real-time linting**: Automatically lint SQL files as you type or save
 - **Manual commands**: Run lint commands on demand
 - **Customizable**: Configure lint behavior, timeouts, and diagnostic display
-- **Language Server Protocol**: Uses LSP architecture for efficient, non-blocking operation
+- **Efficient architecture**: Uses LSP for non-blocking operation
 
 ## Requirements
 
@@ -29,25 +29,12 @@ dotnet tool install -g TSQLLint
 choco install tsqllint
 ```
 
-#### Manual installation:
-Download from the [TSQLLint releases page](https://github.com/tsqllint/tsqllint/releases).
+#### Other options:
+Download from the [TSQLLint releases page](https://github.com/tsqllint/tsqllint/releases) or follow the [TSQLLint installation guide](https://github.com/tsqllint/tsqllint#installation).
 
 After installation, verify TSQLLint is available:
 ```bash
 tsqllint --version
-```
-
-## Installation
-
-### From VS Code Marketplace:
-1. Open VS Code
-2. Go to Extensions (Ctrl+Shift+X / Cmd+Shift+X)
-3. Search for "tsqllint-lite"
-4. Click Install
-
-### From VSIX file:
-```bash
-code --install-extension tsqllint-lite-0.0.1.vsix
 ```
 
 ## Extension Settings
@@ -130,22 +117,14 @@ This extension provides the following commands:
 
 ## How It Works
 
-This extension uses the **Language Server Protocol (LSP)** architecture:
+This extension uses the **Language Server Protocol (LSP)** architecture to provide efficient, non-blocking linting:
 
-1. **Client** (runs in VS Code extension host):
-   - Manages the language client connection
-   - Registers commands and file lifecycle events
+1. Your SQL file is automatically linted when saved (or while typing if enabled)
+2. The extension spawns the TSQLLint CLI and parses its output
+3. Results are displayed as diagnostics (squiggles) in your editor
+4. The lint scheduler manages concurrency to prevent performance issues
 
-2. **Server** (runs in a separate Node.js process):
-   - Handles document synchronization
-   - Manages lint scheduling with concurrency control
-   - Spawns tsqllint CLI processes
-   - Parses output and sends diagnostics back to the client
-
-3. **Lint Scheduler**:
-   - Limits to 4 concurrent lint processes
-   - Debounces typing events to prevent excessive linting
-   - Tracks document versions to ensure lints run against correct content
+For detailed architecture information, see [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## Troubleshooting
 
@@ -229,7 +208,10 @@ Initial release of tsqllint-lite:
 
 ## Contributing
 
-Issues and pull requests are welcome! Please report issues at the [GitHub repository](https://github.com/masmgr/tsqllint-vscode-lite/issues).
+Issues and pull requests are welcome!
+
+- Report issues at the [GitHub repository](https://github.com/masmgr/tsqllint-vscode-lite/issues)
+- See [DEVELOPMENT.md](DEVELOPMENT.md) for setup and development guidelines
 
 ## License
 
