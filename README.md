@@ -6,6 +6,15 @@
 
 A lightweight Visual Studio Code extension that integrates [TSQLLint](https://github.com/tsqllint/tsqllint) into your editor, providing real-time linting for T-SQL files with a powerful Language Server Protocol architecture.
 
+## About This Extension
+
+This extension serves as an alternative to [tsqllint-vscode-extension](https://github.com/tsqllint/tsqllint-vscode-extension). The original extension references an outdated version of TSQLLint, so this project was created to enable integration with the latest TSQLLint releases.
+
+### Key Points
+
+- **TSQLLint must be installed separately** - This extension does not automatically download or bundle TSQLLint. You need to install it independently.
+- **Distinguishes errors and warnings** - This extension displays TSQLLint errors and warnings with appropriate severity levels in VS Code's diagnostic interface.
+
 ## Features
 
 - **Real-time linting**: Automatically lint SQL files as you type or save
