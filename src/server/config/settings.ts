@@ -3,6 +3,7 @@ export type TsqllintSettings = {
 	configPath?: string;
 	runOnSave: boolean;
 	runOnType: boolean;
+	runOnOpen: boolean;
 	debounceMs: number;
 	timeoutMs: number;
 	rangeMode: "character" | "line";
@@ -11,6 +12,7 @@ export type TsqllintSettings = {
 export const defaultSettings: TsqllintSettings = {
 	runOnSave: true,
 	runOnType: false,
+	runOnOpen: true,
 	debounceMs: 500,
 	timeoutMs: 10000,
 	rangeMode: "character",

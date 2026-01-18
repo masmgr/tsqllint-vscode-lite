@@ -1,4 +1,4 @@
-export type LintReason = "save" | "type" | "manual";
+export type LintReason = "save" | "type" | "manual" | "open";
 export type PendingLint = {
 	reason: LintReason;
 	version: number | null;

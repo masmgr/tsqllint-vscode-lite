@@ -65,10 +65,7 @@ documents.onDidChangeContent((change) => {
 });
 
 documents.onDidOpen((change) => {
-	const uri = change.document.uri;
-	if (URI.parse(uri).scheme === "file") {
-		savedVersionByUri.set(uri, change.document.version);
-	}
+	void handleDidOpen(change.document);
 });
 
 documents.onDidSave((change) => {
@@ -142,6 +139,24 @@ async function handleDidSave(document: TextDocument): Promise<void> {
 	} catch (error) {
 		connection.console.error(
 			`tsqllint: failed to react to save (${String(error)})`,
+		);
+	}
+}
+
+async function handleDidOpen(document: TextDocument): Promise<void> {
+	try {
+		const uri = document.uri;
+		if (URI.parse(uri).scheme === "file") {
+			savedVersionByUri.set(uri, document.version);
+		}
+
+		const docSettings = await getSettingsForDocument(uri);
+		if (docSettings.runOnOpen) {
+			requestLint(uri, "open", document.version);
+		}
+	} catch (error) {
+		connection.console.error(
+			`tsqllint: failed to react to open (${String(error)})`,
 		);
 	}
 }

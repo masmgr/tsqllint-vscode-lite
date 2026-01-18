@@ -53,6 +53,8 @@ export const FAKE_CLI_RULES = {
 	MANUAL_RULE: "ManualRule",
 	/** Rule for run-on-type tests */
 	TYPE_RULE: "TypeRule",
+	/** Rule for run-on-open tests */
+	OPEN_RULE: "OpenRule",
 } as const;
 
 /**

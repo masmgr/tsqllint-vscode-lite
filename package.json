@@ -63,6 +63,11 @@
 					"default": false,
 					"description": "Run lint while typing (debounced)."
 				},
+				"tsqllint.runOnOpen": {
+					"type": "boolean",
+					"default": true,
+					"description": "Run lint when a SQL document is opened."
+				},
 				"tsqllint.debounceMs": {
 					"type": "number",
 					"default": 500,

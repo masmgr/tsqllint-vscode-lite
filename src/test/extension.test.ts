@@ -116,6 +116,80 @@ suite("Extension Test Suite", () => {
 		);
 	});
 
+	test("runOnOpen lints when document is opened", async function () {
+		this.timeout(TEST_TIMEOUTS.MOCHA_TEST);
+
+		await runE2ETest(
+			{
+				fakeCliRule: FAKE_CLI_RULES.OPEN_RULE,
+				fakeCliSeverity: "error",
+				config: {
+					runOnOpen: true,
+					runOnSave: false,
+					runOnType: false,
+				},
+				documentContent: "select 1;",
+			},
+			async (context, harness) => {
+				// Create a new SQL document after config is applied
+				// This ensures runOnOpen triggers on the open event
+				const newUri = vscode.Uri.joinPath(
+					context.workspaceRoot,
+					"test_open_2.sql",
+				);
+				await vscode.workspace.fs.writeFile(
+					newUri,
+					new TextEncoder().encode("select 2;"),
+				);
+				const newDocument = await vscode.workspace.openTextDocument(newUri);
+				await vscode.languages.setTextDocumentLanguage(newDocument, "sql");
+
+				const diagnostics = await harness.waitForDiagnostics(
+					newDocument.uri,
+					(entries) => entries.length >= 1,
+				);
+				const match = diagnostics.find(
+					(diag) =>
+						diag.source === "tsqllint" &&
+						diag.code === FAKE_CLI_RULES.OPEN_RULE,
+				);
+				assert.ok(match);
+
+				// Clean up
+				await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+			},
+		);
+	});
+
+	test("runOnOpen=false does not lint on open", async function () {
+		this.timeout(TEST_TIMEOUTS.MOCHA_TEST);
+
+		await runE2ETest(
+			{
+				fakeCliRule: FAKE_CLI_RULES.OPEN_RULE,
+				config: {
+					runOnOpen: false,
+					runOnSave: false,
+					runOnType: false,
+				},
+				documentContent: "select 1;",
+			},
+			async (context, harness) => {
+				// Wait a short time to ensure no linting happens
+				await new Promise((resolve) =>
+					setTimeout(resolve, TEST_DELAYS.DEBOUNCE_SHORT * 2),
+				);
+
+				const diagnostics = vscode.languages.getDiagnostics(context.document.uri);
+				assert.strictEqual(
+					diagnostics.length,
+					0,
+					"No diagnostics should appear when runOnOpen is disabled",
+				);
+			},
+		);
+	});
+
 	// Note: File rename/delete event handling is tested in unit tests
 	// (handlers.test.ts) which directly test handleDidRenameFiles() and
 	// handleDidDeleteFiles() without depending on VS Code file system events.

@@ -62,10 +62,11 @@ Manages concurrent lint execution with sophisticated queuing:
 - **Version tracking**: Ensures lints run against the correct document version
 - **Priority handling**: Manual lints (`reason: "manual"`) bypass debouncing and run immediately
 
-The scheduler handles three lint reasons:
+The scheduler handles four lint reasons:
 - `"save"`: Triggered on document save
 - `"type"`: Triggered during typing (if `runOnType` is enabled)
 - `"manual"`: Triggered by explicit commands
+- `"open"`: Triggered when document is opened (if `runOnOpen` is enabled)
 
 #### 2. TSQLLint Runner ([src/server/lint/runTsqllint.ts](src/server/lint/runTsqllint.ts))
 
@@ -110,6 +111,7 @@ The extension contributes these settings (namespace: `tsqllint`):
 - `configPath`: TSQLLint config file path (passed as `-c` argument)
 - `runOnSave`: Auto-lint on save (default: true)
 - `runOnType`: Lint while typing (default: false)
+- `runOnOpen`: Auto-lint on open (default: true)
 - `debounceMs`: Debounce delay for typing (default: 500)
 - `timeoutMs`: Process timeout (default: 10000)
 - `rangeMode`: Diagnostic range mode - "character" or "line" (default: "character")
