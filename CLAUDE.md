@@ -26,8 +26,15 @@ npm run format           # Format with Biome
 ### Testing
 ```bash
 npm run test:unit        # Run unit tests with Mocha
+npm run test:unit:coverage  # Run unit tests with c8 coverage reporting
+npm run test:coverage    # Run tests with coverage (alias for test:unit:coverage)
 npm run test:e2e         # Run E2E tests with VS Code Test
 npm test                 # Run all tests (unit + E2E)
+```
+
+### Code Coverage
+```bash
+npm run test:unit:coverage  # Generate coverage report (targets: 50% lines, 80% functions, 75% branches)
 ```
 
 **Build Process for Tests**:
@@ -123,6 +130,8 @@ The extension contributes these settings (namespace: `tsqllint`):
 Tests are organized into two categories under [src/test/](src/test/):
 
 1. **Unit tests** ([src/test/unit/](src/test/unit/)): Test individual functions in isolation
+   - [scheduler.test.ts](src/test/unit/scheduler.test.ts) - LintScheduler tests (21 test cases)
+   - [decodeOutput.test.ts](src/test/unit/decodeOutput.test.ts) - Encoding detection tests (25 test cases)
    - [parseOutput.test.ts](src/test/unit/parseOutput.test.ts) - Output parser tests
    - [runTsqllint.test.ts](src/test/unit/runTsqllint.test.ts) - CLI runner tests
    - [handlers.test.ts](src/test/unit/handlers.test.ts) - File event handler tests
@@ -203,6 +212,51 @@ All timeouts, delays, and retry values are centralized in `testConstants.ts`:
 2. **Always use harness**: New E2E tests must use `runE2ETest()`
 3. **Always use factories**: Don't create inline fakeCli scripts
 4. **Document in CLAUDE.md**: Keep test architecture section updated
+
+## Code Coverage
+
+The project uses **c8** for code coverage reporting with the following targets:
+- **Lines**: 50% (minimum)
+- **Functions**: 80% (minimum)
+- **Branches**: 75% (minimum)
+- **Statements**: 50% (minimum)
+
+Coverage configuration is in [.c8rc.json](.c8rc.json). Run tests with coverage:
+```bash
+npm run test:unit:coverage
+```
+
+Current coverage status:
+- Overall: 52.73%
+- Server/lint: 79.2%
+
+Coverage reports are generated in `coverage/` directory with HTML report at `coverage/index.html`.
+
+## Git Hooks and Automation
+
+### Pre-commit Hooks
+
+The project uses **Husky** to run pre-commit hooks automatically. Configuration in [.husky/pre-commit](.husky/pre-commit):
+
+1. **lint-staged**: Auto-formats and lints staged TypeScript files
+   - Runs `biome format --write` and `biome lint --fix` on `.ts` files
+   - Runs `biome format --write` on `.json`, `.md`, `.yml` files
+   - Configuration in `package.json` under `lint-staged`
+
+2. **Type checking**: Runs on staged TypeScript files when `npm run typecheck` succeeds
+
+Hooks are installed automatically with `npm install` via the `prepare` script.
+
+### Dependency Management
+
+The project uses **Dependabot** for automated dependency updates:
+- Configuration in [.github/dependabot.yml](.github/dependabot.yml)
+- **NPM dependencies**: Weekly updates (Monday 09:00 UTC)
+  - Groups dev and production dependencies separately
+  - Excludes major version updates
+- **GitHub Actions**: Weekly updates (Monday UTC)
+
+Pull requests created by Dependabot are labeled with `dependencies` and `automated`.
 
 ## Important Implementation Notes
 
