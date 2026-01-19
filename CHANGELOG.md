@@ -4,7 +4,20 @@ All notable changes to the "tsqllint-lite" extension will be documented in this 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.0.1] - 2026-01-17
+## [0.0.2] - 2026-01-19
+
+### Fixed
+- **CI/CD improvements**:
+  - Fixed release workflow permissions to enable GitHub Actions deployment
+  - Enhanced `.github/workflows/release.yml` with proper write permissions
+
+### Changed
+- Updated version in package.json to 0.0.2
+- Updated version badge in README.md
+
+---
+
+## [0.0.1] - 2026-01-18
 
 ### Added
 - **Real-time T-SQL linting** with TSQLLint integration
@@ -13,6 +26,7 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/), and this 
   - Supports document synchronization and lifecycle management
 - **Automatic linting triggers**:
   - On save (`tsqllint.runOnSave` setting, enabled by default)
+  - On open (`tsqllint.runOnOpen` setting, enabled by default)
   - While typing (`tsqllint.runOnType` setting, disabled by default)
 - **Manual lint command**: `TSQLLint: Run` for on-demand linting
 - **Intelligent lint scheduling**:
@@ -21,27 +35,44 @@ The format is based on [Keep a Changelog](http://keepachangelog.com/), and this 
   - Debouncing for typing events (configurable via `tsqllint.debounceMs`)
   - Document version tracking to ensure accuracy
 - **Customizable diagnostic display**:
-  - Full-line highlighting for all diagnostics
+  - Full-line highlighting for all diagnostics (rangeMode removed for simplicity)
 - **Flexible configuration options**:
   - Custom TSQLLint executable path (`tsqllint.path`)
   - Custom TSQLLint config file path (`tsqllint.configPath`)
   - Configurable timeout (`tsqllint.timeoutMs`, default 10 seconds)
   - Configurable debounce delay (`tsqllint.debounceMs`, default 500ms)
+  - Auto-lint on open setting (`tsqllint.runOnOpen`)
 - **Cross-platform support**:
   - Windows, macOS, and Linux compatibility
   - Proper handling of Windows `.cmd` and `.bat` executables
   - Case-insensitive path comparison on Windows
-- **Temporary file support** for linting unsaved documents
+  - Command line output encoding detection and handling
+- **File lifecycle management**:
+  - Temporary file support for linting unsaved documents
+  - Diagnostics clearing on file delete and rename operations
 - **Comprehensive error handling**:
   - Process timeout protection
   - Cancellation support for in-flight lint requests
   - Executable resolution with caching (30s TTL)
+- **Development tooling**:
+  - Comprehensive test suite (unit tests with 52%+ coverage and E2E tests)
+  - Pre-commit hooks with Husky for code quality
+  - Automated formatting and linting with Biome
+  - CI/CD workflow with GitHub Actions
+  - Dependabot for automated dependency updates
 
 ### Technical Details
 - Uses `vscode-languageclient` and `vscode-languageserver` for LSP implementation
 - Built with esbuild for optimized bundle size
 - Written in TypeScript with strict type checking
-- Comprehensive test suite (unit tests and E2E tests)
+- Test framework: Mocha for unit tests, VS Code Test for E2E tests
+- Code coverage with c8 (targets: 50% lines, 80% functions, 75% branches)
+
+### Documentation
+- Comprehensive README with installation and usage instructions
+- DEVELOPMENT.md for contributor guidance
+- ARCHITECTURE.md explaining the internal design
+- CLAUDE.md with AI coding assistant instructions
 
 ### Requirements
 - VS Code version 1.108.1 or higher
