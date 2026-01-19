@@ -234,6 +234,12 @@ async function runLintNow(uri: string, _reason: LintReason): Promise<number> {
 
 	const documentSettings = await getSettingsForDocument(uri);
 
+	connection.console.log(`[runLintNow] URI: ${uri}`);
+	connection.console.log(`[runLintNow] File path: ${filePath}`);
+	connection.console.log(`[runLintNow] Target file path: ${targetFilePath}`);
+	connection.console.log(`[runLintNow] CWD: ${cwd}`);
+	connection.console.log(`[runLintNow] Is saved: ${isSavedFile}`);
+
 	let result: LintRunResult;
 	try {
 		result = await runTsqllint({
@@ -277,6 +283,9 @@ async function runLintNow(uri: string, _reason: LintReason): Promise<number> {
 		cwd,
 		lines: document.getText().split(/\r?\n/),
 		...(tempInfo ? { targetPaths: [tempInfo.filePath] } : {}),
+		logger: {
+			log: (message: string) => connection.console.log(message),
+		},
 	});
 
 	connection.sendDiagnostics({ uri, diagnostics });
