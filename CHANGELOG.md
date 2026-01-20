@@ -4,6 +4,25 @@ All notable changes to the "tsqllint-lite" extension will be documented in this 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.0] - 2026-01-20
+
+### Added
+- **TSQLLint installation verification**: Proactive startup check for tsqllint availability with user-friendly error messages
+- **Comprehensive logging system**: Added logging infrastructure for better debugging and diagnostics
+- **Updated Node.js support**: Upgraded to Node.js 24 for improved performance and security
+
+### Changed
+- **Dependency updates**:
+  - Updated Biome from 1.9.4 to 2.3.11 for better code quality tooling
+  - Bumped GitHub Actions dependencies to latest versions (actions/checkout, actions/setup-node, actions/upload-artifact, softprops/action-gh-release)
+- **Project structure**: Cleaned up `.vscode-test` configuration files for simpler testing setup
+- **CI/CD**: Consolidated develop and main branches for streamlined release workflow
+
+### Fixed
+- Biome linting errors from dependencies update
+
+---
+
 ## [0.0.2] - 2026-01-19
 
 ### Fixed

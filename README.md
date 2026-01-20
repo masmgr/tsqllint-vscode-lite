@@ -1,7 +1,7 @@
 # TSQLLint Lite
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-0.0.2-blue.svg)](https://github.com/masmgr/tsqllint-vscode-lite)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/masmgr/tsqllint-vscode-lite)
 [![VS Code](https://img.shields.io/badge/VS%20Code-1.108.1+-007ACC.svg)](https://code.visualstudio.com/)
 
 A lightweight Visual Studio Code extension that integrates [TSQLLint](https://github.com/tsqllint/tsqllint) into your editor, providing real-time linting for T-SQL files with a powerful Language Server Protocol architecture.
@@ -205,6 +205,16 @@ or
 - On Windows, `.cmd` and `.bat` executables are wrapped with `cmd.exe /c`
 
 ## Release Notes
+
+### 1.0.0
+
+Stable release with enhanced features and improved tooling:
+- **TSQLLint installation verification**: Proactive startup check for tsqllint availability
+- **Comprehensive logging system**: Added logging infrastructure for better diagnostics
+- **Node.js 24 support**: Upgraded for improved performance and security
+- **Dependency updates**: Updated Biome to 2.3.11 and GitHub Actions to latest versions
+- **Cleaner project structure**: Removed unnecessary `.vscode-test` configuration files
+- All features from 0.0.2 (Real-time linting with LSP architecture, manual commands, configurable options)
 
 ### 0.0.2
 
