@@ -15,9 +15,13 @@
 	"homepage": "https://github.com/masmgr/tsqllint-vscode-lite#readme",
 	"icon": "icon.png",
 	"engines": {
+		"node": ">=24.0.0",
 		"vscode": "^1.108.1"
 	},
-	"categories": ["Linters", "Programming Languages"],
+	"categories": [
+		"Linters",
+		"Programming Languages"
+	],
 	"keywords": [
 		"tsqllint",
 		"t-sql",
@@ -30,7 +34,9 @@
 		"database",
 		"lint"
 	],
-	"activationEvents": ["onLanguage:sql"],
+	"activationEvents": [
+		"onLanguage:sql"
+	],
 	"main": "./dist/extension.js",
 	"contributes": {
 		"commands": [
@@ -100,9 +106,9 @@
 		"prepare": "husky"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "^1.9.4",
+		"@biomejs/biome": "^2.3.11",
 		"@types/mocha": "^10.0.10",
-		"@types/node": "22.x",
+		"@types/node": "^24.10.9",
 		"@types/vscode": "^1.108.1",
 		"@vscode/test-cli": "^0.0.12",
 		"@vscode/test-electron": "^2.5.2",
@@ -116,7 +122,10 @@
 		"typescript": "^5.9.3"
 	},
 	"lint-staged": {
-		"*.ts": ["biome format --write", "biome lint --fix"],
+		"*.ts": [
+			"biome format --write",
+			"biome lint --fix"
+		],
 		"*.json": "biome format --write"
 	},
 	"dependencies": {
@@ -126,5 +135,9 @@
 		"vscode-languageserver": "^9.0.1",
 		"vscode-languageserver-textdocument": "^1.0.11",
 		"vscode-uri": "^3.0.8"
+	},
+	"volta": {
+		"node": "24.13.0",
+		"npm": "11.6.2"
 	}
 }

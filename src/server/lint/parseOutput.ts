@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import {
-	DiagnosticSeverity,
 	type Diagnostic,
+	DiagnosticSeverity,
 } from "vscode-languageserver/node";
 import { URI } from "vscode-uri";
 
@@ -14,6 +14,9 @@ type ParseOutputOptions = {
 	cwd: string | null;
 	lines: string[];
 	targetPaths?: string[];
+	logger?: {
+		log: (message: string) => void;
+	};
 };
 
 function normalizeForCompare(filePath: string): string {
@@ -46,6 +49,12 @@ export function parseOutput(options: ParseOutputOptions): Diagnostic[] {
 	);
 	const cwd = options.cwd ?? path.dirname(targetPath);
 
+	options.logger?.log(
+		`[parseOutput] Target paths: ${JSON.stringify([...targetPaths])}`,
+	);
+	options.logger?.log(`[parseOutput] CWD: ${cwd}`);
+	options.logger?.log(`[parseOutput] stdout:\n${options.stdout}`);
+
 	for (const line of options.stdout.split(/\r?\n/)) {
 		if (!line.trim()) {
 			continue;
@@ -69,7 +78,12 @@ export function parseOutput(options: ParseOutputOptions): Diagnostic[] {
 			continue;
 		}
 		const resolvedPath = normalizeForCompare(path.resolve(cwd, rawPath));
+		options.logger?.log(`[parseOutput] Line: ${line}`);
+		options.logger?.log(
+			`[parseOutput] Raw path: ${rawPath} -> Resolved: ${resolvedPath}`,
+		);
 		if (!targetPaths.has(resolvedPath)) {
+			options.logger?.log(`[parseOutput] Path not in target paths, skipping`);
 			continue;
 		}
 

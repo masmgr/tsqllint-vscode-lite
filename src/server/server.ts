@@ -11,10 +11,10 @@ import { TextDocument } from "vscode-languageserver-textdocument";
 import { URI } from "vscode-uri";
 import { defaultSettings, type TsqllintSettings } from "./config/settings";
 import { parseOutput } from "./lint/parseOutput";
-import { runTsqllint } from "./lint/runTsqllint";
+import { runTsqllint, verifyTsqllintInstallation } from "./lint/runTsqllint";
 import {
-	LintScheduler,
 	type LintReason,
+	LintScheduler,
 	type PendingLint,
 } from "./lint/scheduler";
 import type { LintRunResult } from "./lint/types";
@@ -54,10 +54,17 @@ connection.onInitialize((params) => {
 
 connection.onInitialized(async () => {
 	await refreshSettings();
+	await verifyInstallation();
 });
 
 connection.onDidChangeConfiguration(async () => {
+	const previousPath = settings.path;
 	await refreshSettings();
+
+	// Re-verify if path setting changed
+	if (previousPath !== settings.path) {
+		await verifyInstallation();
+	}
 });
 
 documents.onDidChangeContent((change) => {
@@ -112,6 +119,18 @@ async function refreshSettings(): Promise<void> {
 		...defaultSettings,
 		...config,
 	});
+}
+
+async function verifyInstallation(): Promise<void> {
+	const result = await verifyTsqllintInstallation(settings);
+
+	if (!result.available) {
+		const message = result.message || "tsqllint not found";
+		await connection.window.showWarningMessage(`tsqllint-lite: ${message}`);
+		connection.console.warn(`[startup] ${message}`);
+	} else {
+		connection.console.log("[startup] tsqllint installation verified");
+	}
 }
 
 async function handleDidChangeContent(document: TextDocument): Promise<void> {
@@ -211,7 +230,7 @@ async function runLintWithCancel(
 	return await runLintNow(uri, pending.reason);
 }
 
-async function runLintNow(uri: string, reason: LintReason): Promise<number> {
+async function runLintNow(uri: string, _reason: LintReason): Promise<number> {
 	const document = documents.get(uri);
 	if (!document) {
 		return 0;
@@ -233,6 +252,12 @@ async function runLintNow(uri: string, reason: LintReason): Promise<number> {
 	}
 
 	const documentSettings = await getSettingsForDocument(uri);
+
+	connection.console.log(`[runLintNow] URI: ${uri}`);
+	connection.console.log(`[runLintNow] File path: ${filePath}`);
+	connection.console.log(`[runLintNow] Target file path: ${targetFilePath}`);
+	connection.console.log(`[runLintNow] CWD: ${cwd}`);
+	connection.console.log(`[runLintNow] Is saved: ${isSavedFile}`);
 
 	let result: LintRunResult;
 	try {
@@ -277,6 +302,9 @@ async function runLintNow(uri: string, reason: LintReason): Promise<number> {
 		cwd,
 		lines: document.getText().split(/\r?\n/),
 		...(tempInfo ? { targetPaths: [tempInfo.filePath] } : {}),
+		logger: {
+			log: (message: string) => connection.console.log(message),
+		},
 	});
 
 	connection.sendDiagnostics({ uri, diagnostics });
