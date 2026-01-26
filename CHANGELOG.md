@@ -4,6 +4,25 @@ All notable changes to the "tsqllint-lite" extension will be documented in this 
 
 The format is based on [Keep a Changelog](http://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [1.0.1] - 2026-01-27
+
+### Added
+- **Auto-detection of `.tsqllintrc` config file**: The extension now automatically searches for `.tsqllintrc` from the SQL file's folder up to the workspace root when `tsqllint.configPath` is not explicitly set
+- **TSQLLint installation guide command**: New `TSQLLint: Open Install Guide` command to help users install TSQLLint CLI
+- **File size limit setting**: New `tsqllint.maxFileSizeKb` setting to prevent automatic linting on large files (manual lint still works)
+- **Multi-language support**: Extension now activates for `sql`, `tsql`, and `mssql` language IDs
+- **Verification script**: Added `npm run verify` script to run tests, typecheck, lint, and format in one command
+
+### Changed
+- **Improved UX**: Enhanced error messages and diagnostics with actionable buttons (e.g., "Open Install Guide")
+- **Configuration improvements**: Auto-detection of config file reduces manual configuration needs
+- **Server implementation**: Refactored to use `documentText` for more reliable linting of unsaved documents
+
+### Fixed
+- **E2E test stability**: Fixed document creation and configuration application order in E2ETestHarness
+
+---
+
 ## [1.0.0] - 2026-01-20
 
 ### Added

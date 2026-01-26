@@ -2,7 +2,7 @@
 	"name": "tsqllint-lite",
 	"displayName": "TSQLLint Lite",
 	"description": "Lightweight T-SQL linter integration for VS Code using TSQLLint",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"publisher": "masmgr",
 	"license": "MIT",
 	"repository": {
